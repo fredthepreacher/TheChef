@@ -9,6 +9,11 @@ import { CATERING_EMAIL, CATERING_PHONE, mailto, tel } from "@/data/contact";
 export default function BookingCTA() {
   return (
     <section className="booking-cta" id="caterer-book">
+      <img
+        className="booking-logo"
+        src="/assets/the-logo-tight.jpg"
+        alt="The Chef Catering Services — Five Star Meals on Wheels"
+      />
       <p className="section-tag" style={{ textAlign: "center" }}>Reserve Your Date</p>
       <h2 className="section-title">Ready to Book?</h2>
       <p className="section-body">

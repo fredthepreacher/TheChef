@@ -1661,3 +1661,31 @@ body.reviews-page {
 }
 .rv-footer-brand { font-family:'Cinzel',serif; font-size:13px; color:rgba(201,168,76,.42); letter-spacing:.06em; }
 .rv-footer-copy { font-size:10.5px; color:rgba(255,255,255,.20); letter-spacing:.05em; }
+
+/* ================================================================
+   CATERING LOGO PLACEMENTS (caterer side, homepage)
+   mix-blend-mode: screen melts the logo's black background
+   into the dark site backgrounds — no visible box edges.
+   ================================================================ */
+
+.nav-logo-mark {
+  height: 34px;
+  width: auto;
+  display: block;
+  border-radius: 6px;
+  mix-blend-mode: screen;
+}
+
+.booking-cta .booking-logo {
+  height: 110px;
+  width: auto;
+  display: block;
+  margin: 0 auto 26px;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 30px rgba(201, 168, 76, 0.15));
+}
+
+@media (max-width: 600px) {
+  .booking-cta .booking-logo { height: 84px; }
+  .nav-logo-mark { height: 28px; }
+}

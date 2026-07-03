@@ -11,6 +11,11 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
     <section className="world caterer" id="catererWorld">
       <nav className={`nav caterer-nav${navVisible ? " visible" : ""}`} id="catererNav">
         <div className="nav-inner">
+          <img
+            className="nav-logo-mark"
+            src="/assets/the-logo-tight.jpg"
+            alt="The Chef Catering Services — Five Star Meals on Wheels"
+          />
           <span className="nav-logo">The Chef</span>
           <a className="nav-link" href="#caterer-about">About</a>
           <a className="nav-link" href="#caterer-menu">Menu</a>
