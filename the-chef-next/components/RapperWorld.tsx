@@ -1,14 +1,7 @@
 "use client";
 
 import { MUSIC_EMAIL, mailto } from "@/data/contact";
-
-const tracks = [
-  { num: "Track 01", title: "Title Placeholder", meta: "2024 · Single", action: "Play on Spotify" },
-  { num: "Track 02", title: "Title Placeholder", meta: "2024 · Single", action: "Play on Spotify" },
-  { num: "Track 03", title: "Title Placeholder", meta: "2023 · Mixtape Cut", action: "Play on Spotify" },
-  { num: "Track 04", title: "Title Placeholder", meta: "2023 · Collab", action: "Apple Music" },
-  { num: "Track 05", title: "Title Placeholder", meta: "2022 · Project Track", action: "Download" },
-];
+import MusicSection from "./MusicSection";
 
 const shows = [
   { date: "TBD", year: "2025", venue: "Venue Name — Add Here", city: "City, State" },
@@ -83,33 +76,8 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
           </div>
         </section>
 
-        {/* MUSIC */}
-        <section className="section" id="rapper-music">
-          <p className="section-tag">Discography</p>
-          <h2 className="section-title">The Music</h2>
-          <p className="section-body">
-            Streaming links, singles, and project downloads will live here. Every drop tells a piece of the story.
-          </p>
-          <div className="music-grid">
-            {tracks.map((t) => (
-              <div className="track-card" key={t.num}>
-                <div className="track-num">{t.num}</div>
-                <div className="track-title">{t.title}</div>
-                <div className="track-meta">{t.meta}</div>
-                <div className="track-play">
-                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                  {t.action}
-                </div>
-              </div>
-            ))}
-            <div className="track-card" style={{ borderStyle: "dashed", opacity: 0.45 }}>
-              <div className="track-num">Coming Soon</div>
-              <div className="track-title">New Drop</div>
-              <div className="track-meta">2025 · Unreleased</div>
-              <div className="track-play" style={{ opacity: 0.5 }}>Stay tuned</div>
-            </div>
-          </div>
-        </section>
+        {/* MUSIC — featured mixtape + playable singles */}
+        <MusicSection />
 
         {/* SHOWS */}
         <section className="section" id="rapper-shows">
@@ -146,8 +114,9 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <a className="btn-primary" href={mailto(MUSIC_EMAIL, "Show Booking Inquiry")}>Book a Show</a>
-            {/* TODO: link the press kit when it exists */}
-            <a className="btn-ghost" href="#rapper-contact">Press Kit</a>
+            <a className="btn-primary" href={mailto(MUSIC_EMAIL, "Feature Request")} style={{ background: "rgba(255,80,20,.18)", color: "#fff", border: "1px solid rgba(255,80,20,.35)", boxShadow: "none" }}>
+              Contact for Features
+            </a>
           </div>
         </section>
 
