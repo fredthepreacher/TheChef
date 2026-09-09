@@ -1,5 +1,15 @@
 # The Chef — Luxury Catering & Music
 
+## Catering CRM foundation
+
+The catering CRM is implemented under `/crm`, with public intake at `/catering/inquiry`. **Hosted Supabase/Turnstile setup and acceptance testing remain required before launch.** Music stays independent.
+
+- [Inspection, boundaries and implementation plan](docs/IMPLEMENTATION.md)
+- [Environment, database, owner provisioning and deployment setup](docs/SETUP.md)
+- [Verification results and complete changed-file inventory](docs/PHASE1-REPORT.md)
+
+Use `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. See `.env.example`. Never put server secrets in `NEXT_PUBLIC_` variables. The original marketing-site notes below remain useful for editing content.
+
 Cinematic dual-identity website for **The Chef**: one side luxury private-chef catering, the other side original music. Converted from the original static HTML/CSS/JS site to **Next.js (App Router) + React + TypeScript**, ready for GitHub → Vercel.
 
 ## Run locally
@@ -77,4 +87,4 @@ public/assets/      # all images
 - `data/contact.ts` → `MUSIC_EMAIL` is `cheftherapperr@email.com` (looks like a placeholder — confirm the real music booking email).
 - Music tracks and show listings are placeholders carried over from the original site.
 - Press Kit button links nowhere yet (same as original).
-- Future: replace the mailto booking CTA with a form + API route (`app/api/inquiry/route.ts`), keeping the email provider key in a Vercel environment variable — never hardcoded.
+- Catering booking now links to the structured inquiry form. Database and spam-protection setup is required; outbound email is a later phase.

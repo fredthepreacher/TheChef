@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ReviewsSection from "@/components/ReviewsSection";
 import BodyClass from "@/components/BodyClass";
-import { CATERING_EMAIL, CATERING_PHONE, BRAND, mailto, tel } from "@/data/contact";
+import { CATERING_PHONE, BRAND, tel } from "@/data/contact";
 
 export const metadata: Metadata = {
   title: "Client Reviews",
@@ -114,7 +114,7 @@ export default function ReviewsPage() {
         <div className="rv-cta-btns">
           <a
             className="btn-primary"
-            href={mailto(CATERING_EMAIL, "Quote Request")}
+            href="/catering/inquiry"
             style={{ background: "var(--gold)", color: "#0a0800", boxShadow: "0 8px 30px rgba(201,168,76,.30)" }}
           >
             Request a Quote
