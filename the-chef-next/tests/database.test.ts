@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { randomUUID } from "node:crypto";
 
@@ -13,15 +13,9 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
     create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text); alter table storage.objects enable row level security;
     grant usage on schema storage to authenticated,anon; grant select,insert,update,delete on storage.objects to authenticated,anon;`);
-  await db.exec(
-    readFileSync(
-      new URL(
-        "../supabase/migrations/20260909164345_catering_foundation.sql",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  );
+  const migrations = new URL("../supabase/migrations/", import.meta.url);
+  for (const file of readdirSync(migrations).filter((name) => name.endsWith(".sql")).sort())
+    await db.exec(readFileSync(new URL(file, migrations), "utf8"));
   const owner = randomUUID(),
     manager = randomUUID(),
     staff = randomUUID(),
@@ -127,6 +121,40 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
     );
   });
   await t.test(
+    "inquiry acknowledgment and follow-up enqueue exactly once",
+    async () => {
+      const leads = (
+        await db.query<{ count: number }>(
+          "select count(*)::int as count from leads",
+        )
+      ).rows[0].count;
+      assert.equal(
+        (
+          await db.query<{ count: number }>(
+            "select count(*)::int as count from communications where template_key='inquiry_acknowledgment'",
+          )
+        ).rows[0].count,
+        leads,
+      );
+      assert.equal(
+        (
+          await db.query<{ count: number }>(
+            "select count(*)::int as count from crm_private.email_outbox",
+          )
+        ).rows[0].count,
+        leads,
+      );
+      assert.equal(
+        (
+          await db.query<{ count: number }>(
+            "select count(*)::int as count from tasks where automation_key='inquiry_follow_up'",
+          )
+        ).rows[0].count,
+        leads,
+      );
+    },
+  );
+  await t.test(
     "anonymous cannot read clients or call privileged intake",
     async () => {
       await asRole("anon");
@@ -140,7 +168,17 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
   await t.test("unprovisioned and staff users see no CRM records", async () => {
     for (const id of [outsider, staff]) {
       await asRole("authenticated", id);
-      for (const table of ["clients", "leads", "events", "activity_log"]) {
+      for (const table of [
+        "clients",
+        "leads",
+        "events",
+        "venues",
+        "event_menus",
+        "tasks",
+        "event_documents",
+        "communications",
+        "activity_log",
+      ]) {
         assert.equal((await db.query(`select * from ${table}`)).rows.length, 0);
       }
       await assert.rejects(
@@ -214,6 +252,209 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
     },
   );
   await t.test(
+    "event gets reusable venue snapshot and operational defaults",
+    async () => {
+      const venue = (
+        await db.query<{ id: string }>(
+          "insert into venues(name,address,city,state,postal_code,coi_requirement,insurance_due_days_before_event) values('Test Hall','1 Original Ave','Tampa','FL','33601','required',21) returning id",
+        )
+      ).rows[0];
+      await db.query("update events set venue_id=$1 where id=$2", [
+        venue.id,
+        eventId,
+      ]);
+      const event = (
+        await db.query<{
+          venue_snapshot: { address: string };
+          coi_status: string;
+          current_menu_id: string;
+          coi_due_at: string;
+        }>(
+          "select venue_snapshot,coi_status,current_menu_id,coi_due_at from events where id=$1",
+          [eventId],
+        )
+      ).rows[0];
+      assert.equal(event.venue_snapshot.address, "1 Original Ave");
+      assert.equal(event.coi_status, "required");
+      assert.ok(event.current_menu_id);
+      assert.ok(event.coi_due_at);
+      assert.equal(
+        (
+          await db.query<{ count: number }>(
+            "select count(*)::int as count from tasks where event_id=$1",
+            [eventId],
+          )
+        ).rows[0].count,
+        6,
+      );
+      await db.query("update venues set address='2 New Ave' where id=$1", [
+        venue.id,
+      ]);
+      assert.equal(
+        (
+          await db.query<{ venue_snapshot: { address: string } }>(
+            "select venue_snapshot from events where id=$1",
+            [eventId],
+          )
+        ).rows[0].venue_snapshot.address,
+        "1 Original Ave",
+      );
+      await assert.rejects(
+        db.query("update events set coi_status='automatically_approved' where id=$1", [
+          eventId,
+        ]),
+        /check constraint/,
+      );
+    },
+  );
+  await t.test(
+    "menu approval locks a revision and later edits require a new version",
+    async () => {
+      const first = (
+        await db.query<{ id: string }>(
+          "select current_menu_id as id from events where id=$1",
+          [eventId],
+        )
+      ).rows[0];
+      await db.query(
+        "update event_menus set appetizers='Plantain cups',status='approved' where id=$1",
+        [first.id],
+      );
+      await db.query("update event_menus set status='locked' where id=$1", [
+        first.id,
+      ]);
+      const locked = (
+        await db.query<{
+          approved_at: string;
+          locked_at: string;
+        }>(
+          "select approved_at,locked_at from event_menus where id=$1",
+          [first.id],
+        )
+      ).rows[0];
+      assert.ok(locked.approved_at);
+      assert.ok(locked.locked_at);
+      await assert.rejects(
+        db.query("update event_menus set appetizers='Changed' where id=$1", [
+          first.id,
+        ]),
+        /immutable/,
+      );
+      const second = (
+        await db.query<{ id: string }>(
+          "insert into event_menus(event_id,version,appetizers,created_by) values($1,2,'Plantain cups',$2) returning id",
+          [eventId, owner],
+        )
+      ).rows[0];
+      await db.query("update events set current_menu_id=$1 where id=$2", [
+        second.id,
+        eventId,
+      ]);
+      assert.equal(
+        (
+          await db.query<{ version: number }>(
+            "select m.version from events e join event_menus m on m.id=e.current_menu_id where e.id=$1",
+            [eventId],
+          )
+        ).rows[0].version,
+        2,
+      );
+    },
+  );
+  await t.test(
+    "task and document lifecycles are constrained and audited",
+    async () => {
+      const task = (
+        await db.query<{ id: string }>(
+          "insert into tasks(event_id,title,category,priority,created_by) values($1,'Pack hot boxes','equipment','high',$2) returning id",
+          [eventId, owner],
+        )
+      ).rows[0];
+      await db.query("update tasks set status='complete' where id=$1", [
+        task.id,
+      ]);
+      assert.ok(
+        (
+          await db.query<{ completed_at: string }>(
+            "select completed_at from tasks where id=$1",
+            [task.id],
+          )
+        ).rows[0].completed_at,
+      );
+      await db.query("update tasks set status='blocked' where id=$1", [task.id]);
+      assert.equal(
+        (
+          await db.query<{ completed_at: string | null }>(
+            "select completed_at from tasks where id=$1",
+            [task.id],
+          )
+        ).rows[0].completed_at,
+        null,
+      );
+      const document = (
+        await db.query<{
+          id: string;
+          client_id: string;
+          document_group_id: string;
+        }>(
+          "insert into event_documents(event_id,client_id,category,storage_path,original_filename,mime_type,size_bytes,uploaded_by) values($1,$2,'coi',$3,'coi.pdf','application/pdf',128,$4) returning id,client_id,document_group_id",
+          [eventId, randomUUID(), `${eventId}/coi/test.pdf`, owner],
+        )
+      ).rows[0];
+      assert.equal(document.client_id, lead.client_id);
+      const replacement = (
+        await db.query<{ id: string; document_group_id: string; version: number }>(
+          "insert into event_documents(event_id,client_id,category,storage_path,original_filename,mime_type,size_bytes,uploaded_by,replaces_document_id,document_group_id,version) values($1,$2,'coi',$3,'coi-v2.pdf','application/pdf',256,$4,$5,$6,99) returning id,document_group_id,version",
+          [
+            eventId,
+            randomUUID(),
+            `${eventId}/coi/test-v2.pdf`,
+            owner,
+            document.id,
+            randomUUID(),
+          ],
+        )
+      ).rows[0];
+      assert.equal(replacement.document_group_id, document.document_group_id);
+      assert.equal(replacement.version, 2);
+      assert.equal(
+        (
+          await db.query<{ state: string }>(
+            "select state from event_documents where id=$1",
+            [document.id],
+          )
+        ).rows[0].state,
+        "superseded",
+      );
+      await db.query("update event_documents set state='archived' where id=$1", [
+        replacement.id,
+      ]);
+      assert.ok(
+        (
+          await db.query<{ archived_at: string }>(
+            "select archived_at from event_documents where id=$1",
+            [replacement.id],
+          )
+        ).rows[0].archived_at,
+      );
+      await assert.rejects(
+        db.query(
+          "update event_documents set storage_path='forged.pdf' where id=$1",
+          [replacement.id],
+        ),
+        /immutable/,
+      );
+      assert.ok(
+        (
+          await db.query<{ count: number }>(
+            "select count(*)::int as count from activity_log where entity_id in ($1,$2,$3)",
+            [task.id, document.id, replacement.id],
+          )
+        ).rows[0].count >= 4,
+      );
+    },
+  );
+  await t.test(
     "guest count edits logged and hard deletion/audit forgery blocked",
     async () => {
       await db.query("update events set guest_count=30 where id=$1", [eventId]);
@@ -223,7 +464,7 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
           after: { guest_count: number };
         };
       }>(
-        "select metadata from activity_log where entity_id=$1 and action='update'",
+        "select metadata from activity_log where entity_id=$1 and action='update' and metadata->'after'->>'guest_count'='30' order by created_at desc limit 1",
         [eventId],
       );
       assert.equal(result.rows[0].metadata.before.guest_count, 25);
@@ -289,6 +530,14 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
           /row-level security/,
         );
       }
+      await asRole("authenticated", owner);
+      await db.query(
+        "delete from storage.objects where bucket_id='crm-documents' and name='test/venue.pdf'",
+      );
+      assert.equal(
+        (await db.query("select * from storage.objects")).rows.length,
+        0,
+      );
     },
   );
   await db.close();

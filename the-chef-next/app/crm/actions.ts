@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { configured, serverClient } from "@/lib/supabase/server";
 import { requireOperator } from "@/lib/auth/require-operator";
-import { stageSchema, eventSchema } from "@/lib/crm/domain";
+import {
+  stageSchema,
+  eventSchema,
+  eventOperationsSchema,
+  eventMenuSchema,
+  taskSchema,
+  venueSchema,
+} from "@/lib/crm/domain";
 export async function login(form: FormData) {
   if (!configured()) redirect("/crm/login?error=setup");
   const parsed = z
@@ -116,4 +123,135 @@ export async function updateClient(form: FormData) {
   if (error || !data) redirect(`/crm/clients/${id}?error=save`);
   revalidatePath("/crm", "layout");
   redirect(`/crm/clients/${id}?saved=1`);
+}
+
+export async function saveVenue(form: FormData) {
+  const { db } = await requireOperator();
+  const parsed = venueSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) redirect("/crm/venues?error=validation");
+  const { id, ...values } = parsed.data;
+  if (id) {
+    const { error } = await db.from("venues").update(values).eq("id", id);
+    if (error) redirect(`/crm/venues/${id}?error=save`);
+    revalidatePath("/crm", "layout");
+    redirect(`/crm/venues/${id}?saved=1`);
+  }
+  const { data, error } = await db
+    .from("venues")
+    .insert(values)
+    .select("id")
+    .single();
+  if (error || !data) redirect("/crm/venues?error=save");
+  revalidatePath("/crm", "layout");
+  redirect(`/crm/venues/${data.id}?saved=1`);
+}
+
+export async function updateEventOperations(form: FormData) {
+  const { db } = await requireOperator();
+  const parsed = eventOperationsSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) redirect("/crm/events?error=validation");
+  const { id, ...values } = parsed.data;
+  const { error } = await db.from("events").update(values).eq("id", id);
+  if (error) redirect(`/crm/events/${id}?error=save`);
+  revalidatePath("/crm", "layout");
+  redirect(`/crm/events/${id}?saved=1#venue-coi`);
+}
+
+export async function setEventConfirmation(form: FormData) {
+  const { db } = await requireOperator();
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      field: z.enum(["guest_count_confirmed_at", "client_confirmed_at"]),
+      confirmed: z.enum(["true", "false"]),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) redirect("/crm/events?error=validation");
+  const { id, field, confirmed } = parsed.data;
+  const { error } = await db
+    .from("events")
+    .update({ [field]: confirmed === "true" ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) redirect(`/crm/events/${id}?error=save`);
+  revalidatePath("/crm", "layout");
+  redirect(`/crm/events/${id}?saved=1`);
+}
+
+export async function updateEventMenu(form: FormData) {
+  const { db } = await requireOperator();
+  const parsed = eventMenuSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) redirect("/crm/events?error=validation");
+  const { id, event_id, ...values } = parsed.data;
+  const { error } = await db.from("event_menus").update(values).eq("id", id);
+  if (error) redirect(`/crm/events/${event_id}?error=menu`);
+  revalidatePath("/crm", "layout");
+  redirect(`/crm/events/${event_id}?saved=1#menu`);
+}
+
+export async function createMenuRevision(form: FormData) {
+  const { db, user } = await requireOperator();
+  const parsed = z
+    .object({ event_id: z.uuid(), menu_id: z.uuid() })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) redirect("/crm/events?error=validation");
+  const { event_id, menu_id } = parsed.data;
+  const { data: current, error: readError } = await db
+    .from("event_menus")
+    .select("*")
+    .eq("id", menu_id)
+    .eq("event_id", event_id)
+    .single();
+  if (readError || !current) redirect(`/crm/events/${event_id}?error=menu`);
+  const {
+    id: _id,
+    created_at: _created,
+    updated_at: _updated,
+    approved_at: _approved,
+    locked_at: _locked,
+    created_by: _creator,
+    ...copy
+  } = current;
+  void [_id, _created, _updated, _approved, _locked, _creator];
+  const { data: revision, error } = await db
+    .from("event_menus")
+    .insert({
+      ...copy,
+      version: current.version + 1,
+      status: "draft",
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
+  if (error || !revision) redirect(`/crm/events/${event_id}?error=menu`);
+  const { error: linkError } = await db
+    .from("events")
+    .update({ current_menu_id: revision.id })
+    .eq("id", event_id);
+  if (linkError) redirect(`/crm/events/${event_id}?error=menu`);
+  revalidatePath("/crm", "layout");
+  redirect(`/crm/events/${event_id}?saved=1#menu`);
+}
+
+export async function saveTask(form: FormData) {
+  const { db, user } = await requireOperator();
+  const parsed = taskSchema.safeParse(Object.fromEntries(form));
+  const fallback = String(form.get("event_id") || "");
+  if (!parsed.success)
+    redirect(fallback ? `/crm/events/${fallback}?error=task` : "/crm/tasks?error=validation");
+  const { id, ...values } = parsed.data;
+  const destination = values.event_id
+    ? `/crm/events/${values.event_id}`
+    : "/crm/tasks";
+  if (id) {
+    const { error } = await db.from("tasks").update(values).eq("id", id);
+    if (error) redirect(`${destination}?error=task`);
+  } else {
+    if (!values.event_id) redirect("/crm/tasks?error=validation");
+    const { error } = await db
+      .from("tasks")
+      .insert({ ...values, created_by: user.id });
+    if (error) redirect(`${destination}?error=task`);
+  }
+  revalidatePath("/crm", "layout");
+  redirect(`${destination}?saved=1${values.event_id ? "#tasks" : ""}`);
 }

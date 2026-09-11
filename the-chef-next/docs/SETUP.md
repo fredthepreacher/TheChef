@@ -1,91 +1,80 @@
-# The Chef Catering CRM — setup and verification
+# The Chef Catering CRM — setup and operations
 
-## Current delivery
+## Current environment
 
-Phase 1 code is implemented locally on `feat/catering-crm-foundation`. It is **not deployed or connected to a hosted catering database**. The connected Supabase account contains unrelated applications, so no existing project was changed. No email, SMS, payment or AI provider is configured or called.
+The CRM uses the dedicated Supabase project `the-chef-catering-crm` (`pqfyhkehbwikeaongcdo`) in `us-east-1`. Do not apply its migrations to another project. Phase 1.5 hosted acceptance and Phase 2 hosted operations acceptance were completed against the Vercel Preview environment. The production domain was not changed or promoted.
 
-Run commands from `the-chef-next/`. Node 22 or 24 is recommended (verified here on Node 24.20.0). Install with `npm ci`. Next.js is pinned to 15.5.25, preserving the existing React 18 application. PostCSS is overridden to 8.5.23 to fix inherited advisories; audit passed after this change. ESLint 9 is retained for compatibility with the Next.js 15 lint configuration; evaluate its supported successor alongside the next framework maintenance upgrade.
+The framework baseline is intentionally frozen at Next.js 15.5.25, React 18, and the package versions in `package-lock.json`. Run from this directory with Node 22 or 24 and install with `npm ci`.
 
-## Dedicated Supabase project
+## Database and migrations
 
-Create or select a **dedicated The Chef catering** Supabase project. Do not reuse the unrelated CRM projects. Database tables use normal names such as `clients`, so applying this migration to an unrelated/shared database is inappropriate.
-
-1. Set up the project, keep Data API exposure limited to `public` (never expose `crm_private`), and use the project Connect dialog for URL/publishable key.
-2. Disable public signups and anonymous sign-ins in hosted Auth settings. The local config already disables signups. This app has no signup route.
-3. Configure the Auth Site URL to the deployed website origin. Create the owner in Supabase Auth through trusted administrative tooling, with a verified email and a securely delivered password. Public invitation acceptance/password-reset screens are not part of this phase; an operator needing recovery must use the project administrator.
-4. Authenticate the CLI, then review and apply migrations:
-
-   ```sh
-   npx supabase link --project-ref YOUR_CATERING_PROJECT_REF
-   npx supabase db push --dry-run
-   npx supabase db push
-   npx supabase db advisors --linked --type all
-   ```
-
-   CLI flags were checked against the installed version. Supply credentials through prompts or protected environment configuration, not committed files or shell history arguments. Do not use `db reset` against production.
-
-5. Provision the first owner with the reviewed `supabase/seed.sql` bootstrap. In one trusted SQL session, set `crm.bootstrap_owner_id` to the actual Auth user UUID using `set_config`, then execute the seed file. With no setting, the seed is a no-op; it refuses to create another owner when one exists. It does not create passwords, match on an unverified email, or promote the first signup.
-6. Later role grants/revocations should be explicit reviewed migrations to `profiles`, using existing Auth UUIDs. Users cannot modify role records through the app. Deactivation is checked from the database on every request. Owner and manager can access operational data; staff/unprovisioned accounts are denied until assigned-event/task views are implemented.
-
-The migration creates `profiles`, `clients`, `leads`, `events`, `activity_log`, private request/rate-limit tables, restricted functions/triggers, and two private storage buckets. No file upload/download UI exists yet. Storage object read/insert/update is operator-only; there is no delete policy.
-
-## Environment
-
-Copy `.env.example` to `.env.local` locally; configure matching variables in Vercel Preview/Production settings. Do not commit `.env.local`. Set production variables before building so public widget keys are compiled correctly.
-
-| Variable | Purpose |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Dedicated catering project API URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public Supabase key; RLS is the authorization boundary |
-| `SUPABASE_SECRET_KEY` | Server-only Supabase secret/service-role key used exclusively for transactional public intake |
-| `APP_ORIGIN` | Exact origin, e.g. `https://your-domain.com`, no trailing slash; inquiry POSTs require this Origin |
-| `INQUIRY_RATE_LIMIT_SECRET` | Long random server-only HMAC secret; do not reuse another provider key |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Public Cloudflare Turnstile widget key |
-| `TURNSTILE_SECRET_KEY` | Server-only Turnstile verification key |
-| `ALLOW_LOCAL_INQUIRIES` | Optional `true` only for local development; ignored by production builds |
-
-Turnstile must allow the exact domain. Verification checks hostname and `catering_inquiry` action. Production intake fails closed without server configuration or a valid challenge. Phone fallback remains available. For preview deployments, use an explicitly configured preview origin and widget domain, not a wildcard origin bypass.
-
-The public endpoint checks body size (24 KB), input schema, origin, CAPTCHA and persistent hourly limits (3 per email, 10 per network). On Vercel it uses the platform-managed network header. Other deployments intentionally share a conservative global network bucket until a trusted proxy adapter is implemented. Configure edge-level request limiting as appropriate before a public launch; invalid requests do not reach database intake. Periodically prune old rate-limit rows through a reviewed maintenance migration/job; request IDs intentionally retain replay protection. No scheduled worker is enabled in Phase 1.
-
-## Local and deployment checks
+All database changes live in `supabase/migrations/`. Apply them through migration tooling:
 
 ```sh
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run start -- --hostname 127.0.0.1 --port 3100
+npx supabase link --project-ref pqfyhkehbwikeaongcdo
+npx supabase db push --dry-run
+npx supabase db push
+npx supabase db advisors --linked --type all
 ```
 
-`npm test` runs input and PostgreSQL workflow/RLS tests. To include no-credentials HTTP tests, start the built app with **no Supabase or APP_ORIGIN configuration**, then set `TEST_BASE_URL=http://127.0.0.1:3100` for `npm test`. Those tests deliberately check the unconfigured fail-closed behavior; do not point them at production.
+Never use `db reset` against the hosted project. The migrations create the Phase 1 CRM foundation plus reusable venues, event operations fields, menu revisions, preparation tasks, event-document metadata, communications, and the private email outbox. All applicable public tables use RLS. `crm_private` stays outside the Data API and is service-only.
 
-Tests execute the actual migration using PGlite, bootstrapping test-only equivalents of Supabase Auth/Storage schemas and roles. This verifies SQL, grants, RLS and triggers; it does **not** prove hosted Supabase Auth, PostgREST cookie refresh, CAPTCHA delivery or real Storage upload behavior. Docker/psql were unavailable locally. Use a dedicated Supabase preview project for the remaining acceptance tests.
+The initial owner is already provisioned through the secure bootstrap process. There is no public signup route and public signup remains disabled. Future operator provisioning must use reviewed administrative tooling and an existing verified Auth UUID; client-editable JWT metadata is not an authorization source.
 
-Vercel root directory remains `the-chef-next`, build `npm run build`, install `npm ci`. Do not configure static export: private CRM and intake require a server runtime. Existing marketing routes remain prerendered. No deployment or Git push was performed.
+## Environment variables
 
-## Acceptance tests requiring your project
+Copy `.env.example` to ignored `.env.local` for local development. Configure matching values separately in Vercel Preview and Production. Never commit real values.
 
-- Sign in as owner and manager; open all CRM routes and sign out. Check session refresh after expiry. Confirm staff, inactive and unprovisioned accounts are denied even with a valid Auth session.
-- Submit an inquiry with a real Turnstile challenge. Confirm one client, one lead and audit records; repeat the same request to verify idempotency. Submit a later inquiry for the same email and confirm its original contact details remain unchanged.
-- Move a lead stage, record a lost reason, create/open its prospective event, change the event guest count and inspect history. Reopen pages to verify persistence.
-- Confirm private bucket objects cannot be fetched anonymously and authorized upload/read works through Supabase tooling. Run hosted database advisors and review every finding.
-- Check desktop/mobile operational screens with real records. Current browser verification covers public intake, package selection, unauthenticated login, and public split/music regression, not authenticated CRM rendering.
+| Variable | Visibility and purpose |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Public URL for the dedicated Chef project. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public browser key; RLS remains the authorization boundary. |
+| `SUPABASE_SECRET_KEY` | Server-only key used by the public inquiry transaction. |
+| `APP_ORIGIN` | Exact application origin, without a trailing slash. Inquiry POSTs require this Origin. |
+| `INQUIRY_RATE_LIMIT_SECRET` | Server-only HMAC secret for persistent rate-limit identifiers. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Public Cloudflare Turnstile widget key. |
+| `TURNSTILE_SECRET_KEY` | Server-only Turnstile verification secret. |
+| `ALLOW_LOCAL_INQUIRIES` | Optional `true` in local development only; production ignores it. |
 
-Do not switch production traffic to online intake until these checks pass. A local `201` database save means inquiry received, not a confirmed event. Acknowledgment is currently on-screen only; email acknowledgments, outbound follow-ups, notifications outside the dashboard and automated eligibility rules are deferred.
+The public intake checks body size, schema, origin, Turnstile, and persistent hourly limits before calling the atomic database function. Successful intake creates or reuses the client, creates one lead, one follow-up task, one queued communication, and one private outbox item. A success response means the inquiry was saved; it does not reserve the date or confirm pricing.
 
-## Current product limits
+## Private documents
 
-- Lead list/board with detail-page status control; no drag-and-drop or full table view yet.
-- Search filters the most recent 200 records; server-side pagination/full-history search remains next work.
-- Client notes/archive and reusable relationships; no standalone manual client creation/editing workflow yet.
-- Event creation copies historical package and requested menu. Event status and sales-pipeline status are separate manually maintained fields; no cross-state automation is implied.
-- No operational readiness approval, quotes, contracts, deposits, payments, document upload UI, AI, SMS, emails, calendar or scheduler in this foundation.
-- Owner/manager operational access; no user-management/settings UI, and staff have no operational access yet.
+COI and event files use the private `crm-documents` bucket. Operators upload and download with their authenticated browser session, so Storage RLS is enforced. Accepted files are PDF, JPEG, and PNG up to 10 MB. Replacements create a new metadata version and mark the prior version superseded. Archiving keeps metadata and history. No public URLs are generated.
 
-## References consulted
+The app grants operator delete access only so it can remove an orphan when metadata registration fails. Normal product removal archives metadata and retains the Storage object. Permanent retention and purge policy should be defined before production document volume grows.
 
-- [Supabase SSR clients and verified identity](https://supabase.com/docs/guides/auth/server-side/creating-a-client)
-- [Supabase changelog](https://supabase.com/changelog)
-- [Next.js 15 migration guide](https://nextjs.org/docs/app/guides/upgrading/version-15)
-- [Next.js Windows security advisory](https://github.com/vercel/next.js/security/advisories/GHSA-p293-qw3h-jr36)
+## Email provider boundary
+
+The database transaction now creates an idempotent inquiry acknowledgment in `public.communications` and `crm_private.email_outbox`. `lib/email/provider.ts` defines the delivery boundary and `lib/email/templates.ts` renders the branded acknowledgment. No provider is configured, no worker dispatches the outbox, and queued acknowledgments are not marked sent.
+
+To enable delivery in a later phase:
+
+1. Select and approve a transactional email provider.
+2. Verify a Chef-owned sending domain with that provider.
+3. Choose the From and Reply-To addresses.
+4. Add the provider API credential only to server-side Vercel environment variables.
+5. Implement a durable dispatcher with retries, provider message IDs, and delivery-state updates.
+
+## Verification
+
+```sh
+npm run build
+npm run typecheck
+npm run lint
+npm test
+npm audit --omit=dev --audit-level=moderate
+```
+
+The PGlite suite executes all migrations and covers intake idempotency, RLS roles, venue snapshots, menu locking, task and document lifecycle rules, audit protections, readiness calculations, and Phase 1 regressions. The credential-gated HTTP test skips unless its dedicated test configuration is supplied; hosted HTTP, Turnstile, Auth, RLS, and browser boundaries were exercised separately and are recorded in the phase reports.
+
+## Known operational boundaries
+
+- Deposit and payment are explicitly shown as untracked and excluded from readiness.
+- A human operator must approve COI and menu states; file presence does not infer approval.
+- External calendar synchronization is not configured.
+- Email acknowledgments remain queued until a provider and dispatcher are approved.
+- Quotes, invoices, payments, advanced AI, SMS, payroll/staff scheduling, and a customer portal remain outside Phase 2.
+- Supabase Auth leaked-password protection is currently reported disabled by the hosted security advisor. Enable it in the Chef project if the organization plan exposes that control.
+
+See `docs/PHASE1_5-REPORT.md` and `docs/PHASE2-REPORT.md` for hosted evidence and cleanup results.

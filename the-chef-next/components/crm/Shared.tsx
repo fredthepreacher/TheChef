@@ -28,12 +28,12 @@ export function Search({ value = "" }: { value?: string }) {
     </form>
   );
 }
-export async function Activity({ id }: { id: string }) {
+export async function Activity({ id, relatedIds = [] }: { id: string; relatedIds?: string[] }) {
   const { db } = await requireOperator();
   const { data, error } = await db
     .from("activity_log")
     .select("id,action,entity_type,created_at,metadata")
-    .eq("entity_id", id)
+    .in("entity_id", [id, ...relatedIds])
     .order("created_at", { ascending: false })
     .limit(30);
   if (error) throw new Error("Unable to load activity");

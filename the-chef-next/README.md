@@ -1,12 +1,14 @@
 # The Chef — Luxury Catering & Music
 
-## Catering CRM foundation
+## Catering CRM operations
 
-The catering CRM is implemented under `/crm`, with public intake at `/catering/inquiry`. **Hosted Supabase/Turnstile setup and acceptance testing remain required before launch.** Music stays independent.
+The catering CRM is implemented under `/crm`, with public intake at `/catering/inquiry`. Phase 1.5 hosted acceptance is complete, and Phase 2 adds reusable venues, COI and private event documents, versioned menus, preparation tasks, event readiness, a calendar/agenda, operational dashboard priorities, and a durable acknowledgment outbox. Music stays independent.
 
 - [Inspection, boundaries and implementation plan](docs/IMPLEMENTATION.md)
 - [Environment, database, owner provisioning and deployment setup](docs/SETUP.md)
 - [Verification results and complete changed-file inventory](docs/PHASE1-REPORT.md)
+- [Phase 2 implementation plan](docs/PHASE2-IMPLEMENTATION.md)
+- [Phase 2 hosted acceptance report](docs/PHASE2-REPORT.md)
 
 Use `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. See `.env.example`. Never put server secrets in `NEXT_PUBLIC_` variables. The original marketing-site notes below remain useful for editing content.
 
@@ -87,4 +89,4 @@ public/assets/      # all images
 - `data/contact.ts` → `MUSIC_EMAIL` is `cheftherapperr@email.com` (looks like a placeholder — confirm the real music booking email).
 - Music tracks and show listings are placeholders carried over from the original site.
 - Press Kit button links nowhere yet (same as original).
-- Catering booking now links to the structured inquiry form. Database and spam-protection setup is required; outbound email is a later phase.
+- Catering booking links to the structured inquiry form. Inquiry acknowledgments are durably queued; provider delivery still requires an approved transactional email service and verified sender.

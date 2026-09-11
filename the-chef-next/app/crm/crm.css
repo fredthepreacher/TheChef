@@ -162,7 +162,7 @@
 }
 .crm-kpis {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
 }
 .crm-kpis strong {
@@ -264,6 +264,185 @@
   padding-left: 20px;
   margin-bottom: 20px;
 }
+.crm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+}
+.crm-section-heading,
+.crm-calendar-nav,
+.crm-record-row,
+.crm-task,
+.crm-agenda-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.crm-section-heading {
+  justify-content: space-between;
+}
+.crm-section-heading h2,
+.crm-section-heading p {
+  margin-bottom: 0;
+}
+.crm-readiness .crm-section-heading > strong {
+  color: var(--gold-light);
+  font-size: 38px;
+}
+.crm-progress {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #ffffff12;
+  margin: 18px 0;
+}
+.crm-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+.crm-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 22px;
+}
+.crm-readiness-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ffffff15;
+}
+.crm-readiness-row span:first-child,
+.crm-task > span,
+.crm-agenda-row > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.crm-readiness-row small,
+.crm-task small,
+.crm-record-row small,
+.crm-agenda-row small {
+  display: block;
+  color: #b9b3a5;
+}
+.crm-state {
+  display: inline-block;
+  width: fit-content;
+  white-space: nowrap;
+  border-radius: 20px;
+  border: 1px solid #777;
+  padding: 3px 9px;
+  font-size: 11px;
+}
+.crm-state-ready {
+  color: #a9e6ba;
+  border-color: #4c9a61;
+}
+.crm-state-attention {
+  color: var(--gold-light);
+  border-color: var(--gold);
+}
+.crm-state-blocked {
+  color: #ffb2aa;
+  border-color: #bd554b;
+}
+.crm-state-neutral {
+  color: #b9b3a5;
+}
+.crm-blockers {
+  margin-top: 18px;
+  border-left: 3px solid #bd554b;
+  padding: 12px 18px;
+  background: #3b181866;
+}
+.crm-anchor-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 18px 0;
+}
+.crm-anchor-nav a {
+  border: 1px solid #c9a84c45;
+  border-radius: 20px;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.crm-snapshot {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #0c0d0e;
+  border: 1px solid #ffffff15;
+  border-radius: 7px;
+  padding: 14px;
+  max-height: 320px;
+  overflow: auto;
+}
+.crm-task,
+.crm-record-row {
+  padding: 14px 0;
+  border-bottom: 1px solid #ffffff15;
+}
+.crm-task select {
+  width: min(190px, 32vw);
+}
+.crm-row-actions {
+  display: flex;
+  gap: 8px;
+}
+.crm-inline-check {
+  flex-direction: row !important;
+  align-items: center;
+}
+.crm-inline-check input {
+  width: 22px;
+  min-height: 22px;
+}
+.crm-calendar-nav {
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.crm-calendar-nav span {
+  flex: 1;
+}
+.crm-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(100px, 1fr));
+  overflow-x: auto;
+}
+.crm-calendar-label,
+.crm-calendar-day {
+  min-width: 100px;
+  border: 1px solid #ffffff15;
+  padding: 8px;
+}
+.crm-calendar-label {
+  text-align: center;
+  color: #b9b3a5;
+}
+.crm-calendar-day {
+  min-height: 120px;
+}
+.crm-calendar-outside {
+  opacity: 0.35;
+}
+.crm-calendar-event {
+  display: block;
+  margin-top: 7px;
+  border-left: 3px solid var(--gold);
+  background: #c9a84c15;
+  padding: 5px 7px;
+  font-size: 11px;
+}
+.crm-agenda-row {
+  display: flex;
+}
+.crm-agenda-row > time {
+  font-weight: 600;
+  color: var(--gold-light);
+}
 .inquiry-root {
   padding: 32px 5vw 70px;
 }
@@ -321,6 +500,10 @@
   .crm-columns {
     grid-template-columns: 1fr;
   }
+  .crm-form-grid,
+  .crm-readiness-grid {
+    grid-template-columns: 1fr;
+  }
   .crm-header {
     gap: 12px;
   }
@@ -347,5 +530,14 @@
   }
   .inquiry-form fieldset {
     padding: 16px;
+  }
+  .crm-task,
+  .crm-record-row,
+  .crm-agenda-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .crm-task select {
+    width: 100%;
   }
 }

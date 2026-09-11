@@ -24,6 +24,9 @@ export default async function Layout({
           <Link href="/crm/leads">Leads</Link>
           <Link href="/crm/clients">Clients</Link>
           <Link href="/crm/events">Catering events</Link>
+          <Link href="/crm/calendar">Calendar</Link>
+          <Link href="/crm/tasks">Tasks</Link>
+          <Link href="/crm/venues">Venues</Link>
           <Link href="/">Public website ↗</Link>
         </nav>
         <main className="crm-main">{children}</main>

@@ -23,6 +23,12 @@ export default async function LeadDetail({
   if (error) throw new Error("Could not load lead");
   if (!data) notFound();
   const lead = data as Lead;
+  const { data: communications, error: communicationsError } = await db
+    .from("communications")
+    .select("id,channel,subject,status,created_at,sent_at")
+    .eq("lead_id", id)
+    .order("created_at", { ascending: false });
+  if (communicationsError) throw new Error("Could not load communications");
   const p = await searchParams;
   return (
     <>
@@ -85,6 +91,29 @@ export default async function LeadDetail({
           </dl>
         </section>
       </div>
+      <section className="crm-panel">
+        <h2>Communications</h2>
+        {communications?.map((communication) => (
+          <div className="crm-record-row" key={communication.id}>
+            <span>
+              <strong>{communication.subject}</strong>
+              <small>
+                {label(communication.channel)} · {label(communication.status)} ·{" "}
+                {new Date(communication.created_at).toLocaleString()}
+              </small>
+            </span>
+          </div>
+        ))}
+        {!communications?.length && <p>No communications recorded.</p>}
+        {communications?.some(
+          (communication) => communication.status === "queued",
+        ) && (
+          <p className="crm-muted">
+            Queued acknowledgments have not been sent because an email provider
+            is not configured.
+          </p>
+        )}
+      </section>
       <Activity id={id} />
     </>
   );
