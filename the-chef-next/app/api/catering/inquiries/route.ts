@@ -4,6 +4,8 @@ import { inquirySchema } from "@/lib/crm/domain";
 import { intakeClient } from "@/lib/supabase/intake";
 import { packages } from "@/data/menu";
 export const runtime = "nodejs";
+const TURNSTILE_ALWAYS_PASS_TEST_SECRET =
+  "1x0000000000000000000000000000000AA";
 const reply = (message: string, status: number) =>
   NextResponse.json(
     { message },
@@ -76,11 +78,17 @@ export async function POST(request: NextRequest) {
         },
       );
       const result = await response.json();
+      const originHostname = new URL(origin).hostname;
+      const usesLocalTurnstileTestKey =
+        process.env.TURNSTILE_SECRET_KEY ===
+          TURNSTILE_ALWAYS_PASS_TEST_SECRET &&
+        (originHostname === "localhost" || originHostname === "127.0.0.1");
       if (
         !response.ok ||
         !result.success ||
-        result.hostname !== new URL(origin).hostname ||
-        result.action !== "catering_inquiry"
+        (!usesLocalTurnstileTestKey &&
+          (result.hostname !== originHostname ||
+            result.action !== "catering_inquiry"))
       )
         return reply("Spam protection expired. Please try again.", 400);
     } catch {

@@ -1,113 +1,189 @@
-# Phase 1.5 — Hosted Integration & Acceptance
+# Phase 1.5 — Hosted Integration & Acceptance Report
 
-**Status: BLOCKED / NOT PASSED. Phase 2 has not begun.**
+**Final status:** PASS
 
-Baseline: `0204d0668c634a1d32a238b6e4d81ee756657258` on `feat/catering-crm-foundation`.
-This report records the initial access check and local re-verification. It is not hosted acceptance sign-off.
+**Acceptance date:** September 11, 2026
 
-## Environment and access
+**Phase 2:** Not started
 
-Supabase connector access was exercised successfully: project and organization listings returned. The only organization returned was **Wavy Sites LLC** (`hpieaqsnrcibdxxljyhx`). Projects returned were Vertical Ops CRM, wavy crm and DayKare. None is identified as a dedicated The Chef catering project. No unrelated project was modified.
+Phase 1.5 was exercised against the dedicated hosted Supabase project and a Vercel Preview deployment. The public Catering intake, private CRM, Auth, RLS, Storage, audit protections, Turnstile, and the existing Catering and Music/Entertainment experiences passed their required acceptance checks. All temporary hosted acceptance records and files were removed afterward.
 
-The user was asked to select the organization for a new dedicated project (or supply an existing dedicated project reference), and provide the initial owner's email. These answers are pending. The Supabase creation tool requires organization selection, then a cost lookup and explicit cost confirmation before project creation. No costs have been assumed or approved.
+## Environment status
 
-Only `.env.example` exists locally; no `.env.local` or `.vercel` link was found. All seven required hosted configuration variables were absent from the execution environment. No real credentials were read, printed, written or committed in this phase.
-
-## Configuration and secret boundaries
-
-Source inspection confirms `.env.example` includes every application-supplied variable currently used by Phase 1:
-
-| Variable | Placement |
+| Service | Accepted configuration |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Local `.env.local`; Vercel Preview environment for acceptance |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Same; public/publishable key only |
-| `SUPABASE_SECRET_KEY` | Server-only local/Vercel Preview secret |
-| `APP_ORIGIN` | Exact local/preview origin without trailing slash |
-| `INQUIRY_RATE_LIMIT_SECRET` | Random server-only local/Vercel Preview secret |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Public widget key; available during build |
-| `TURNSTILE_SECRET_KEY` | Server-only local/Vercel Preview secret |
-| `ALLOW_LOCAL_INQUIRIES` | Optional local development convenience; production code ignores the bypass |
+| Supabase organization | Wavy Sites LLC |
+| Supabase project | `the-chef-catering-crm` |
+| Project reference | `pqfyhkehbwikeaongcdo` |
+| Region | `us-east-1` |
+| Project status | Active and healthy |
+| Vercel project | `the-chef-catering-crm` |
+| Vercel team | `wavysites-projects` |
+| Stable Preview URL | `https://the-chef-catering-crm-preview.vercel.app` |
+| Production domain | Not changed or promoted |
 
-`NODE_ENV` and `VERCEL` are platform-supplied, not credentials. `TEST_BASE_URL` is an optional test-runner variable.
+Only the dedicated Chef project was used. Vertical Ops CRM, DayKare, and wavy crm were not modified during this work.
 
-The browser Supabase helper uses only the URL and publishable key. The privileged intake helper imports `server-only` and is used by the server inquiry route. A fresh `.next/static` scan found no references to `SUPABASE_SECRET_KEY`, `TURNSTILE_SECRET_KEY`, or `INQUIRY_RATE_LIMIT_SECRET`. Because actual deployment credentials are absent, scanning the final configured deployment bundle for their literal values remains an acceptance step. Do not place a secret/service-role key in a publishable variable.
+The Preview environment contains the Supabase URL, publishable key, server-only Supabase secret key, application origin, rate-limit secret, Turnstile site key, and server-only Turnstile secret. Real values are not present in source control or this report. `.env.example` documents every application-owned variable. `NODE_ENV` and `VERCEL` remain platform supplied.
 
-## Hosted acceptance matrix
+The browser client uses only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Privileged Supabase and Turnstile credentials are read by server-only code. A literal-value scan of the built client assets found no server credentials.
 
-| Area | Actual result |
-|---|---|
-| Dedicated Supabase environment | BLOCKED: organization/project selection and provisioning pending |
-| Existing migration deployment | NOT RUN: no dedicated project selected |
-| Hosted tables and indexes | NOT VERIFIED |
-| Hosted RLS and policy behavior | NOT VERIFIED; local PGlite checks passed only |
-| Hosted audit/history protections | NOT VERIFIED; local checks passed only |
-| Private buckets | NOT VERIFIED against hosted Storage |
-| Owner bootstrap | NOT RUN: owner email and dedicated project needed |
-| Owner login/logout | NOT RUN against hosted Auth |
-| Random authenticated, inactive, staff and unprovisioned access | NOT RUN against hosted Auth/PostgREST; local SQL coverage only |
-| Session persistence and refresh | NOT RUN |
-| Unauthenticated CRM redirect | PASS locally through built-app HTTP checks |
-| Real public form → hosted transaction | NOT RUN |
-| Returning client matching and duplicate retry | NOT RUN hosted; PGlite checks passed |
-| Package/custom-menu/contact/date/guest persistence | NOT RUN hosted |
-| Hosted throttling | NOT RUN |
-| Safe validation and transaction-only success | Validation tests passed and code inspected; real hosted success/failure branches unexercised |
-| Valid Turnstile token | NOT RUN: widget keys unavailable |
-| Invalid/missing Turnstile token in configured production mode | NOT RUN; source requires verification and ignores local bypass in production |
-| Authenticated dashboard/leads/client/event browser flows | BLOCKED by owner login |
-| Stage/lost reason, notes/archive, conversion/edit, audit and re-login persistence | NOT RUN in authenticated browser |
-| Owner Storage upload/retrieval | NOT RUN |
-| Anonymous/unauthorized Storage retrieval | NOT RUN against hosted Storage |
-| Public bucket URLs denied | NOT RUN against hosted Storage |
-| Storage cleanup | No hosted test artifacts created |
-| Deployment preview | NOT DEPLOYED; waits for hosted-backend acceptance as requested |
-| Production domain | Unchanged |
+## Migration results
 
-No discrepancy between PGlite and hosted Supabase can yet be established: there is no hosted test result to compare. PGlite uses test-created Auth/Storage schemas and roles; it does not exercise Supabase Auth, PostgREST, Storage HTTP endpoints, or token refresh. Local successes must not be promoted to hosted results.
+The existing Phase 1 catering foundation migration was applied to hosted Supabase through migration tooling. Tables were not manually recreated in the dashboard.
 
-## Turnstile setup required
+Verified hosted objects:
 
-In the [Cloudflare dashboard](https://dash.cloudflare.com/), select the intended account, open **Turnstile → Add widget**, name it `The Chef Catering Preview`, add the actual preview hostname (and a permitted localhost hostname if needed), select Managed mode, then create the widget. Copy the site key into `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and its secret into `TURNSTILE_SECRET_KEY`. These steps were checked against [Cloudflare's official widget-management documentation](https://developers.cloudflare.com/turnstile/get-started/widget-management/dashboard/).
+- Public tables: `profiles`, `clients`, `leads`, `events`, and `activity_log`.
+- Private tables: `crm_private.inquiry_requests` and `crm_private.rate_limits`.
+- All 14 expected primary, unique, and secondary indexes.
+- All expected public and Storage policies.
+- Private Storage buckets `crm-documents` and `crm-client-uploads`, both with `public=false`.
+- RLS enabled on all seven application tables.
 
-Store the values in the ignored local `.env.local` file and the deployment project's **Preview** environment settings. Do not paste secrets into this report, commit them, or reuse the secret in a `NEXT_PUBLIC_` variable. Rebuild after setting the public site key. Set `APP_ORIGIN` to the exact origin used by the form; verification also checks the widget hostname and `catering_inquiry` action. The frontend suppresses Turnstile's automatic response field and sends the token explicitly.
+The migration contents deployed without a behavioral discrepancy from the PGlite foundation tests. Hosted migration history assigned version `20260909200419_catering_foundation`, while the local filename is `20260909164345_catering_foundation.sql`. This timestamp mismatch must be reconciled before a future Supabase CLI `db push` so the same DDL is not attempted twice. No database reset is needed.
 
-For practical local development, `ALLOW_LOCAL_INQUIRIES=true` bypasses Turnstile only when `NODE_ENV` is not production. This is not a substitute for production-mode Turnstile acceptance. Do not claim Cloudflare dummy testing keys prove a real production widget.
+Supabase's security advisor reported two informational notices for the two private tables because RLS is enabled with no client policies. That is intentional: these tables are service-role-only implementation state.
 
-## Preview preparation
+## Authentication results
 
-Configuration remains: Vercel project root `the-chef-next`, install `npm ci`, build `npm run build`, no static export. A preview target/project and origin must be identified, and its environment configured separately from Production. Use a stable preview hostname compatible with `APP_ORIGIN` and Turnstile hostname checks. No production alias or domain should be promoted during acceptance.
+The initial owner was securely provisioned for `thechefcs@gmail.com` and mapped to one active `profiles` row with owner role. The password was entered directly by the owner and was never requested, displayed, persisted, or committed by the acceptance process.
 
-No hosted preview has been created, no deployment credentials have been exercised, and no hosted environment separation has been verified. The existing local preview is not a deployed acceptance environment.
+Verified in the real application:
 
-## Checks rerun in this phase
+- Owner email/password login succeeds.
+- `/crm` redirects unauthenticated visitors to `/crm/login`.
+- An authenticated but unprovisioned test user is denied and redirected to `/crm/login?error=access`.
+- Inactive or unprovisioned profiles cannot access CRM data.
+- Public signup is disabled, and there is no public registration route that grants CRM access.
+- Refresh preserves the authenticated session.
+- Logout invalidates the application session and returns to login.
+- Signing back in restores access, and prior database changes persist.
+
+The temporary unprovisioned Auth user was deleted and its absence was verified.
+
+## RLS and audit results
+
+The owner JWT returned `is_operator=true` and could read the accepted CRM rows. An unprovisioned authenticated identity returned `is_operator=false` and zero profiles, clients, leads, events, and audit rows. Anonymous access to private CRM data was denied.
+
+Runtime checks covered owner access, anonymous denial, authenticated unprovisioned denial, and the private service-only intake state. An authenticated attempt to forge an `activity_log` row failed with PostgreSQL error `42501 permission denied`. Legitimate lead, client, and event changes generated audit entries, and those entries survived refresh and re-login.
+
+## Authenticated CRM browser acceptance
+
+The owner exercised the hosted database through the local production application and verified:
+
+- Dashboard metrics and action-required records.
+- Lead list and lead detail.
+- Lead stage changes.
+- Marking a lead lost with a reason.
+- Client list and client detail.
+- Client notes.
+- Archive and unarchive.
+- Lead-to-event conversion.
+- Event list and event editing, including booked status and guest count.
+- Audit timeline entries for the accepted changes.
+- Persistence after page refresh, logout, and re-login.
+
+The CRM remained private and noindex. Administrative data was not exposed through public routes.
+
+## Public Catering intake results
+
+The hosted intake database function and the actual Next.js HTTP route were both exercised.
+
+Database-level acceptance verified:
+
+- A new inquiry creates the correct client and lead.
+- A returning customer is matched by normalized email.
+- Replaying the same request UUID is idempotent and does not create a duplicate lead.
+- A distinct inquiry from the same returning customer creates a new lead linked to the existing client.
+- Package, event type, requested date, guest count, contact details, service style, venue details, COI requirement, budget, custom menu, dietary notes, and inquiry notes persist.
+- Three inquiries within the configured email window succeed and the fourth is throttled.
+- Invalid payloads return safe, understandable validation errors.
+- The UI shows success only after the backend transaction completes.
+
+The final Vercel Preview form submission used the real public page at `/catering/inquiry`. The Turnstile widget completed successfully, the form displayed the backend receipt confirmation, and hosted Supabase contained exactly one matching client and one matching lead with the submitted package, custom menu, guest count, date, venue, COI, contact, budget, dietary, and service details. Two audit entries were present for that transaction.
+
+## Turnstile results
+
+Local production-mode acceptance used Cloudflare's official test keys because Cloudflare would not cleanly create a production widget for `localhost`. The application contains a narrow local-only compatibility path for Cloudflare's documented always-pass test hostname/action values; it activates only for the published test secret and a `localhost` or `127.0.0.1` origin. Real preview verification remains strict.
+
+The Vercel Preview uses a real Cloudflare Turnstile widget configured for `the-chef-catering-crm-preview.vercel.app`:
+
+- Valid real widget token: PASS. The widget reported success and the backend accepted the inquiry.
+- Missing token: PASS. The route returned HTTP 503 with a spam-protection prompt and created no record.
+- Invalid token: PASS. The route returned HTTP 400 with an expired-token prompt and created no record.
+- The Turnstile secret remains server-side and was not exposed in browser assets or logs.
+
+Cloudflare keys are obtained from **Cloudflare Dashboard → Turnstile → Add widget**. Add the exact Preview hostname, create the widget, and place the public site key in `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Place the secret in server-only `TURNSTILE_SECRET_KEY`. For local development these belong in ignored `.env.local`; for hosted acceptance they belong in Vercel's **Preview** environment. Rebuild/redeploy after changing the public site key.
+
+## Storage results
+
+A temporary document was uploaded through the real Supabase Storage HTTP API to the private `crm-documents` bucket.
+
+- Owner upload: PASS.
+- Owner authenticated download: PASS; downloaded bytes matched the upload.
+- Unprovisioned authenticated retrieval: denied.
+- Anonymous retrieval: denied.
+- Public object URL: not accessible.
+- Bucket configuration: private.
+- Cleanup: test object removed through the Storage API and absence verified.
+
+Storage metadata RLS was also checked under owner, unprovisioned, and anonymous identities.
+
+## Deployment Preview and browser regressions
+
+The accepted stable Preview is:
+
+`https://the-chef-catering-crm-preview.vercel.app`
+
+The latest accepted deployment was `https://the-chef-catering-kaiqwk9a0-wavysites-projects.vercel.app` and the stable Preview alias points to it. Preview environment variables are separate from Production.
+
+The first Vercel deployment unexpectedly received the new project's default production alias even though the deployment command did not include `--prod`. No existing Chef production domain was connected, changed, or promoted. Subsequent acceptance used Preview only.
+
+Catering regression checks passed on the deployed Preview: the branded home experience, story, menu/package links, gallery, reviews, and inquiry CTAs rendered and navigated correctly.
+
+Music/Entertainment regression checks also passed: the split-view selector switched to Music, and the music navigation, artist story, featured mixtape, tracks, shows, and contact content rendered independently from the Catering CRM. No CRM functionality was added to the Music side.
+
+No application-originated browser console errors were observed. Cloudflare's cross-origin Turnstile iframe emitted its own numeric console messages; they did not affect widget or form behavior.
+
+## Final build and test results
 
 | Check | Result |
 |---|---|
 | Production build | PASS — Next.js 15.5.25 |
 | Typecheck | PASS |
-| Lint | PASS with one existing unused-import warning in `app/layout.tsx`; no errors |
-| Automated tests | 25 passed, zero failures/skips, with no-credentials HTTP tests targeting local port 3102 |
-| Full dependency audit | Zero vulnerabilities reported |
-| Browser Catering regression | Keyboard reveal sets `locked-chef`; inquiry CTA points to `/catering/inquiry` |
-| Browser Music regression | Unlock then music reveal sets `locked-rapper`; separate music mailto links preserved; all three audio elements reached readyState 4 |
-| Browser error log | No errors on the fresh regression tab |
-| Framework/dependency freeze | `package.json` and lockfile unchanged from baseline |
-| Public branding and source preservation | Global CSS, music/split source, track data and public assets unchanged |
+| Lint | PASS — 0 warnings and 0 errors |
+| Automated tests | PASS — 16 passed, 0 failed, 1 optional no-credentials HTTP test skipped |
+| Dependency audit | PASS — 0 vulnerabilities |
+| Catering browser regression | PASS on Vercel Preview |
+| Music/Entertainment browser regression | PASS on Vercel Preview |
+| Framework/dependency freeze | PASS — no package or lockfile changes |
+| Client secret scan | PASS — no server-secret matches in `.next/static` |
 
-These are local regression results, not final hosted acceptance. The complete suite must run again after hosted configuration and any necessary integration fixes.
+The skipped automated test is the optional production HTTP boundary test that runs only when its dedicated credentials are supplied to that test process. The equivalent missing-token, invalid-token, real valid-token, hosted intake, Auth, RLS, and browser boundaries were exercised directly during this acceptance phase.
+
+## Cleanup evidence
+
+Acceptance cleanup removed 8 temporary clients, 14 leads, 2 events, 33 related audit entries, 14 private inquiry-request records, all acceptance rate-limit counters, the temporary Storage object and placeholder, and the temporary unprovisioned Auth user.
+
+A final hosted query returned zero for Phase 1.5 clients, leads, events, inquiry requests, rate-limit rows, test Auth users, acceptance Storage objects, and audit metadata containing the Phase 1.5 marker. The real owner account was preserved.
 
 ## Files changed
 
-- `docs/PHASE1_5-REPORT.md` — this new access/status report and exact configuration requirements.
+- `.gitignore` — ignores local Vercel project metadata generated by `vercel link`.
+- `app/api/catering/inquiries/route.ts` — adds the exact Cloudflare official test-key compatibility check for local production-mode acceptance while keeping real hosted validation strict.
+- `docs/PHASE1_5-REPORT.md` — records final hosted acceptance evidence.
+- `docs/PHASE1_5-CHATGPT-HANDOFF.md` — earlier handoff record requested for transfer to ChatGPT.
+- `.env.local` — ignored local-only configuration; contains no committed values.
+- `.vercel/project.json` — ignored local-only link to the dedicated Vercel project.
 
-No application code, schema/migration, dependency, framework, branding or feature changes were made. No temporary hosted documents, inquiries or users were created.
+No dependency, framework, schema, branding, Catering UI, or Music/Entertainment source files changed in Phase 1.5. Temporary request fixtures used for missing/invalid-token checks were deleted.
 
-## Required input and next checkpoint
+## Unresolved issues and future setup
 
-1. Confirm the Supabase organization for the dedicated project: Wavy Sites LLC is available. Alternatively provide the exact existing **catering-only** project reference. If creating, the next step is to retrieve and present its cost before creation.
-2. Provide the intended owner's email. After project creation, provision the Auth account securely and apply the existing `seed.sql` UUID-based bootstrap. Do not post a password in chat; use protected local configuration or enter it directly during login when needed.
-3. Configure the project URL, publishable key and server secret in `.env.local` using the existing example. The selected project's connector may supply project details, but a server intake credential is still required. The HMAC secret can be generated locally during setup.
-4. Create the preview Turnstile widget and configure its site/secret keys as described above, or provide authorized Cloudflare access for widget setup.
-5. Identify the Vercel preview project/team and permitted preview hostname when backend acceptance is ready. Do not change the production domain.
+- Reconcile the hosted/local migration timestamp before a future Supabase CLI `db push`.
+- Production deployment remains intentionally unconfigured. Before production launch, add the production hostname to the real Turnstile widget, configure the same required variables in Vercel's Production environment, deploy intentionally, and rerun the production-origin smoke tests.
 
-Resume at dedicated project provisioning, apply the existing migration through migration tooling, inspect hosted catalogs/policies, then provision owner and exercise the actual browser/Auth/PostgREST/Storage/Turnstile workflows. Stop for a final Phase 1.5 sign-off before any Phase 2 feature work.
+No additional credential or external-service input is required to close Phase 1.5. The owner must continue to retain and rotate the Supabase, rate-limit, Turnstile, and Vercel secrets through their respective dashboards; none belongs in source control.
+
+Phase 1.5 is accepted. Work must stop here for review before Phase 2 begins.

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { CATERING_EMAIL, CATERING_PHONE_DISPLAY } from "@/data/contact";
+import { CATERING_EMAIL } from "@/data/contact";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://thechef.vercel.app"), // TODO: replace with the final custom domain
