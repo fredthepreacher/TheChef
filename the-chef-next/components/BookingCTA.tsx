@@ -11,8 +11,11 @@ export default function BookingCTA() {
     <section className="booking-cta" id="caterer-book">
       <img
         className="booking-logo"
-        src="/assets/the-logo-tight.jpg"
+        src="/assets/brand/the-chef-catering-logo.png"
         alt="The Chef Catering Services — Five Star Meals on Wheels"
+        width={320}
+        height={320}
+        loading="lazy"
       />
       <p className="section-tag" style={{ textAlign: "center" }}>Reserve Your Date</p>
       <h2 className="section-title">Ready to Book?</h2>

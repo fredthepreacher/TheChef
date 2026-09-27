@@ -4,6 +4,7 @@ import Link from "next/link";
 import CatererMenu from "./CatererMenu";
 import ReviewsPreview from "./ReviewsPreview";
 import BookingCTA from "./BookingCTA";
+import CateringHeroVideo from "./CateringHeroVideo";
 
 /** The caterer side of the split-screen — luxury catering brand world. */
 export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
@@ -13,8 +14,10 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
         <div className="nav-inner">
           <img
             className="nav-logo-mark"
-            src="/assets/the-logo-tight.jpg"
+            src="/assets/brand/the-chef-catering-logo.png"
             alt="The Chef Catering Services — Five Star Meals on Wheels"
+            width={40}
+            height={40}
           />
           <span className="nav-logo">The Chef</span>
           <a className="nav-link" href="#caterer-about">About</a>
@@ -28,6 +31,8 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
       </nav>
 
       <div className="caterer-hero-wrap">
+        {/* background media layer — behind the portrait + text */}
+        <CateringHeroVideo />
         <img
           className="portrait chef-img"
           src="/assets/chef-caterer.jpg"
@@ -69,11 +74,22 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
                 packages.
               </p>
             </div>
+            <div className="about-aside">
+              <figure className="about-seal">
+                <img
+                  src="/assets/brand/the-chef-catering-owner-logo.jpeg"
+                  alt="The Chef Catering Services crest — Five Star Meals on Wheels"
+                  width={720}
+                  height={854}
+                  loading="lazy"
+                />
+              </figure>
             <div className="about-stats">
               <div className="stat-card"><div className="stat-num">200+</div><div className="stat-label">Events Catered</div></div>
               <div className="stat-card"><div className="stat-num">5★</div><div className="stat-label">Avg. Client Rating</div></div>
               <div className="stat-card"><div className="stat-num">8+</div><div className="stat-label">Years Experience</div></div>
               <div className="stat-card"><div className="stat-num">12</div><div className="stat-label">Signature Dishes</div></div>
+            </div>
             </div>
           </div>
         </section>
@@ -88,7 +104,18 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
         <BookingCTA />
 
         <footer className="site-footer">
-          <span className="footer-logo">The Chef Catering</span>
+          <span className="footer-brand">
+            <img
+              className="footer-logo-mark"
+              src="/assets/brand/the-chef-catering-logo.png"
+              alt=""
+              aria-hidden="true"
+              width={44}
+              height={44}
+              loading="lazy"
+            />
+            <span className="footer-logo">The Chef Catering</span>
+          </span>
           <span>© 2025 The Chef Catering · All Rights Reserved</span>
         </footer>
       </div>

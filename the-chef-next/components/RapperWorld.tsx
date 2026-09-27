@@ -74,9 +74,26 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
               <div className="stat-card"><div className="stat-num">3</div><div className="stat-label">Projects Dropped</div></div>
             </div>
           </div>
+
+          <div className="artist-photos">
+            <img
+              src="/assets/music/promo/promo-03.jpeg"
+              alt="The Chef — artist portrait under red studio light"
+              width={800}
+              height={1197}
+              loading="lazy"
+            />
+            <img
+              src="/assets/music/promo/promo-02.jpeg"
+              alt="The Chef — artist portrait, locs and red light"
+              width={800}
+              height={1193}
+              loading="lazy"
+            />
+          </div>
         </section>
 
-        {/* MUSIC — featured mixtape + playable singles */}
+        {/* MUSIC — featured upcoming album + playable singles */}
         <MusicSection />
 
         {/* SHOWS */}

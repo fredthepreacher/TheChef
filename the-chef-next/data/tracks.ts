@@ -46,8 +46,10 @@ export const tracks: Track[] = [
 export const featuredProject = {
   title: "From Overlooked to Overbooked",
   artist: "The Chef",
+  byline: "Album by The Chef",
   cover: "/assets/music/covers/from-overlooked-to-overbooked.jpeg",
-  label: "Featured Mixtape",
+  label: "Featured Album Coming Soon",
+  badge: "Upcoming Album",
   description:
-    "From overlooked to overbooked — The Chef turns hunger, pressure, pain, and ambition into a sound built for people who had to grind before they were seen.",
+    "The Chef turns pressure, patience, pain, and ambition into a sound built for people who had to grind before they were seen.",
 };
