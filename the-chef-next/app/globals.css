@@ -1960,54 +1960,101 @@ body.reviews-page {
    Only the MEDIA layers are touched here. .hero-inline text is not.
    ================================================================ */
 
-/* Background video: fills the hero, sits under the portrait (z2)
-   and the hero text (z10). */
+/* ── Video panel ──────────────────────────────────────────────
+   Hybrid of production + video (client handoff, Oct 2026):
+   the production composition stays as-is; the catering video plays
+   ONLY inside the dark left panel, under a strong black/brown veil.
+   Stacking: panel z0 (video → veil) · portrait z2 · hero text z10.
+
+   Desktop (>900px): the panel is clipped to the area LEFT of the
+   portrait. Portrait geometry (from .chef-img): right:-2%,
+   height min(96vh,880px), max-width 60vw, ratio 1022/1072 = 0.9534
+   → visible width = min(min(96vh,880px) × 0.9534, 60vw)
+   → panel width  = 102% − that.
+   Phones/tablets (≤900px): the portrait sits under the text, so the
+   panel fills the hero and only shows in the dark areas around it. */
+.cateringHeroPanel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(102% - min(min(96vh, 880px) * 0.9534, 60vw));
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* feather the right edge back to the production dark before the portrait */
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 140px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 140px), transparent 100%);
+}
+
 .cateringHeroVideo {
   position: absolute;
   inset: 0;
-  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 40%;
+  object-position: 50% 50%;
   pointer-events: none;
-  filter: saturate(.9) brightness(.85);
+  filter: saturate(.85);
 }
 
-/* Dark + gold veil for text readability */
+/* Strong warm black/brown veil — keeps the panel ~75–85% as dark as
+   production; same gold glows as the production .caterer background */
 .cateringHeroVeil {
   position: absolute;
   inset: 0;
-  z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 55% at 75% 20%, rgba(201,168,76,.16) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(8,6,2,.62) 0%, rgba(8,6,2,.42) 35%, rgba(8,6,2,.78) 75%, rgba(8,6,2,.94) 100%),
-    linear-gradient(90deg, rgba(8,6,2,.55) 0%, rgba(8,6,2,.15) 60%, rgba(8,6,2,.35) 100%);
+    radial-gradient(ellipse 60% 50% at 20% 0%,  rgba(201,168,76,.16) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at  5% 80%, rgba(180,120,40,.10) 0%, transparent 50%),
+    linear-gradient(90deg, rgba(8,6,3,.92) 0%, rgba(12,8,4,.84) 55%, rgba(10,7,4,.76) 100%);
 }
 
 /* Lift the caterer portrait so its visible top lines up with the
-   music-side portrait. Both portraits are bottom-anchored with
+   music-side portrait (phones). Both portraits are bottom-anchored with
    object-fit: contain, so their visible heights differ by aspect
    ratio (chef-caterer.jpg 1022×1072, chef-rapper.jpg 641×960).
    bottom = (music visible height) − (catering visible height).
-   Desktop/tablet: heights already match → 0. Phones: ~150px lift.
+   Desktop/tablet: heights already match → 0 (portrait identical to
+   production). Phones: ~150px lift.
    NOTE: if either portrait file is replaced, update the ratios
-   (1.4977 = 960/641, 1.0489 = 1072/1022). */
+   (1.4977 = 960/641, 1.0489 = 1072/1022, 0.9534 = 1022/1072). */
 .caterer .chef-img {
   bottom: calc(min(96vh, 880px, 60vw * 1.4977) - min(96vh, 880px, 60vw * 1.0489));
-  /* soft lower edge so the lifted photo melts into the video */
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
-          mask-image: linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
 }
+
 @media (max-width: 900px) {
   .caterer .chef-img {
     bottom: calc(min(75vh, 650px, 90vw * 1.4977) - min(75vh, 650px, 90vw * 1.0489));
   }
+  .cateringHeroPanel {
+    width: 100%;
+    -webkit-mask-image: none;
+            mask-image: none;
+  }
+  .cateringHeroVideo { object-position: 58% 50%; }
+  .cateringHeroVeil {
+    background:
+      radial-gradient(ellipse 80% 40% at 20% 0%, rgba(201,168,76,.14) 0%, transparent 60%),
+      linear-gradient(180deg, rgba(8,6,3,.86) 0%, rgba(12,8,4,.76) 40%, rgba(10,7,4,.84) 75%, rgba(8,6,3,.94) 100%);
+  }
 }
 
+/* Phones only — where the portrait is actually lifted, soften its new
+   lower edge so it melts into the panel (portrait unchanged elsewhere). */
+@media (max-width: 690px) {
+  .caterer .chef-img {
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 84%, transparent 100%);
+            mask-image: linear-gradient(180deg, #000 0%, #000 84%, transparent 100%);
+  }
+}
+
+/* Reduced motion: static poster instead of the moving video */
 @media (prefers-reduced-motion: reduce) {
-  .cateringHeroVideo { filter: saturate(.85) brightness(.8); }
+  .cateringHeroVideo { display: none; }
+  .cateringHeroPanel {
+    background: url("/assets/video/chef-catering-hero-poster.jpg") 50% 50% / cover no-repeat;
+  }
 }
 
 /* ================================================================

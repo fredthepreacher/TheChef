@@ -8,6 +8,8 @@ import { useEffect, useRef } from "react";
  * - poster frame shows until the video can play (and stays if it fails)
  * - pauses while off-screen (or when the caterer world is hidden) to save battery
  * - respects prefers-reduced-motion: stays on the poster frame
+ * Lives in its own clipped panel (.cateringHeroPanel): on desktop only the
+ * dark area left of the portrait; on phones the dark areas around it.
  * Sits behind the portrait and hero text — it never affects their layout.
  */
 export default function CateringHeroVideo() {
@@ -43,7 +45,7 @@ export default function CateringHeroVideo() {
   }, []);
 
   return (
-    <>
+    <div className="cateringHeroPanel" aria-hidden="true">
       <video
         ref={ref}
         className="cateringHeroVideo"
@@ -53,12 +55,11 @@ export default function CateringHeroVideo() {
         playsInline
         preload="metadata"
         poster="/assets/video/chef-catering-hero-poster.jpg"
-        aria-hidden="true"
         tabIndex={-1}
       >
         <source src="/assets/video/chef-catering-hero.mp4" type="video/mp4" />
       </video>
-      <div className="cateringHeroVeil" aria-hidden="true" />
-    </>
+      <div className="cateringHeroVeil" />
+    </div>
   );
 }
