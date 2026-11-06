@@ -44,8 +44,10 @@ npm run start
 4. Vercel auto-detects Next.js — no settings needed. Click **Deploy**.
 5. After deploy, add your custom domain in Vercel → Project → Settings → Domains.
 
-When the final domain is known, update the `TODO` URLs in:
-`app/layout.tsx` (metadataBase), `app/sitemap.ts`, `app/robots.ts`.
+When the final domain is known, set `NEXT_PUBLIC_SITE_URL` (Production
+environment) — `lib/site.ts` feeds metadataBase, canonical URLs, the sitemap,
+robots and JSON-LD. Only Vercel **production** deployments are indexable;
+previews are noindex automatically.
 
 ## Project structure
 
@@ -60,7 +62,7 @@ components/
   SplitStage.tsx    # drag / lock / unlock split-screen logic ("use client")
   SplitHandle.tsx   # the DRAG pill handle
   CatererWorld.tsx  # catering side (nav, hero, about)
-  RapperWorld.tsx   # music side (nav, hero, about, tracks, shows)
+  RapperWorld.tsx   # Entertainer side (internal name kept; visible copy says Entertainer)
   CatererMenu.tsx   # accordion menu, menu documents, packages, CTA
   MenuModal.tsx     # full-size menu viewer
   GalleryGrid.tsx   # gallery sections + category filtering
@@ -70,6 +72,8 @@ components/
   BodyClass.tsx     # helper for page-level body classes
 data/
   contact.ts        # ALL contact info lives here — edit once, updates everywhere
+  launch.ts         # launch gates for owner-unverified content (prices, stats, shows, delivery)
+  media.ts          # curated hero/endorsement video renditions
   menu.ts           # menu categories, items, documents, packages
   gallery.ts        # gallery images, captions, categories
   reviews.ts        # all client testimonials
@@ -82,11 +86,14 @@ public/assets/      # all images
 - **Menu items or packages:** `data/menu.ts`
 - **Add a gallery photo:** drop the image in `public/assets/`, add an entry in `data/gallery.ts`
 - **Add a review:** `data/reviews.ts`
-- **Music tracks / show dates:** `components/RapperWorld.tsx` (placeholders, same as original site)
+- **Show dates:** `data/launch.ts` → `UPCOMING_SHOWS` (real dates only; empty hides the section)
+- **Entertainer booking contact:** `data/contact.ts` → `ENTERTAINER_BOOKING` (null hides the section)
+- **Re-enable packages/stats after owner confirms:** `data/launch.ts`
 
 ## Known TODOs
 
-- `data/contact.ts` → `MUSIC_EMAIL` is `cheftherapperr@email.com` (looks like a placeholder — confirm the real music booking email).
-- Music tracks and show listings are placeholders carried over from the original site.
+- See `docs/LAUNCH-2026-11-06.md` → Owner decisions for every gated item
+  (domain, Entertainer booking contact, package prices, deposit wording,
+  delivery lane rules, show dates).
 - Press Kit button links nowhere yet (same as original).
 - Catering booking links to the structured inquiry form. Inquiry acknowledgments are durably queued; provider delivery still requires an approved transactional email service and verified sender.
