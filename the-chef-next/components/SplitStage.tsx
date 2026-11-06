@@ -197,7 +197,7 @@ export default function SplitStage() {
         </div>
         <div className="split-label rapper-label">
           <span className="split-label-tag">Swipe Left →</span>
-          <span className="split-label-name">The Chef Music</span>
+          <span className="split-label-name">The Chef — Entertainer</span>
         </div>
       </div>
 
@@ -208,19 +208,19 @@ export default function SplitStage() {
         <h1 className="hero-name">The Chef</h1>
         <p className="hero-sub">Unforgettable food for every occasion worth celebrating.</p>
         <div className="cta-row">
-          <a className="btn-primary" href="#caterer-menu">View Menu</a>
-          <a className="btn-ghost" href="#caterer-book">Book Now</a>
+          <a className="btn-primary" href="/catering/inquiry">Build My Event</a>
+          <a className="btn-ghost" href="#caterer-menu">Explore Menu</a>
         </div>
       </div>
 
       <div className="hero-content rapper-content" ref={rapHeroRef}>
-        <p className="eyebrow">Artist · Songwriter · Original Sound</p>
+        <p className="eyebrow">Artist · Songwriter · Performer</p>
         <div className="hero-divider"></div>
         <h1 className="hero-name">The Chef</h1>
         <p className="hero-sub">Raw lyricism. Bold identity. Music built from real life.</p>
         <div className="cta-row" style={{ justifyContent: "flex-end" }}>
           <a className="btn-primary" href="#rapper-music">Listen Now</a>
-          <a className="btn-ghost" href="#rapper-shows">Shows</a>
+          <a className="btn-ghost" href="#rapper-about">Meet The Artist</a>
         </div>
       </div>
 
@@ -246,9 +246,9 @@ export default function SplitStage() {
         </svg>
         <span className="unlock-label">
           {locked === "chef"
-            ? "⇄  Unlock  —  switch to Rapper"
+            ? "⇄  Unlock  —  switch to Entertainer"
             : locked === "rapper"
-            ? "⇄  Unlock  —  switch to Caterer"
+            ? "⇄  Unlock  —  switch to Catering"
             : "⇄  Unlock  —  switch sides"}
         </span>
       </button>

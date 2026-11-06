@@ -39,6 +39,10 @@ export default async function LeadDetail({
       <Notice {...p} />
       <p>
         {lead.event_type} · {lead.requested_date} · {lead.guest_count} guests
+        {lead.inquiry.event_location ? ` · ${lead.inquiry.event_location}` : ""}
+        {lead.inquiry.selected_menu_items?.length
+          ? ` · ${lead.inquiry.selected_menu_items.length} dishes selected`
+          : ""}
       </p>
       <Link href={`/crm/clients/${lead.client_id}`}>View client</Link>
       <div className="crm-columns">
@@ -76,6 +80,12 @@ export default async function LeadDetail({
             Creating a prospective event does not confirm availability or take a
             payment.
           </p>
+          <p className="crm-muted">
+            Deposit workflow (launch): send the approved quote as a Clover
+            invoice and set the stage to Awaiting Deposit. Set Booked only after
+            the deposit shows as paid in Clover — never from a customer
+            screenshot or redirect.
+          </p>
         </section>
         <section className="crm-panel">
           <h2>Original inquiry</h2>
@@ -85,7 +95,23 @@ export default async function LeadDetail({
               .map(([k, v]) => (
                 <div key={k}>
                   <dt>{label(k)}</dt>
-                  <dd>{String(v) || "Not provided"}</dd>
+                  <dd>
+                    {Array.isArray(v) ? (
+                      v.length ? (
+                        <ul className="crm-inline-list">
+                          {v.map((item) => (
+                            <li key={String(item)}>{String(item)}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        "None selected"
+                      )
+                    ) : (
+                      <span style={{ whiteSpace: "pre-line" }}>
+                        {String(v) || "Not provided"}
+                      </span>
+                    )}
+                  </dd>
                 </div>
               ))}
           </dl>

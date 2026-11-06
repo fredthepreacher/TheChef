@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { menuCategories, customMenuTags, menuDocs, packages } from "@/data/menu";
 import { CATERING_EMAIL, CATERING_PHONE, CATERING_PHONE_DISPLAY, CHEF_NAME, tel } from "@/data/contact";
+import { SHOW_PACKAGE_PRICING } from "@/data/launch";
+import { itemKey, groupSelection } from "@/lib/catering/menu-catalog";
+import { useEventMenu } from "@/lib/catering/event-menu-store";
 import MenuModal from "./MenuModal";
 
 /** Inline icons for each menu category — ported from the original SVGs. */
@@ -27,11 +30,17 @@ const icons: Record<string, React.ReactNode> = {
   ),
 };
 
-/** The full luxury catering menu section: accordion cards, menu documents, packages, CTA. */
+/**
+ * The luxury catering menu: accordion cards with selectable dishes, the
+ * printed menus, and the "Your Event Menu" summary that hands the selection
+ * to Build My Event (/catering/inquiry).
+ */
 export default function CatererMenu() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [modalDoc, setModalDoc] = useState<string | null>(null);
   const drawerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const { selected, toggle, remove, clear, isFull } = useEventMenu();
+  const groups = groupSelection(selected);
 
   /* Animate drawer max-height like the original accordion. */
   useEffect(() => {
@@ -47,7 +56,7 @@ export default function CatererMenu() {
     }
   }, [openId]);
 
-  const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
+  const toggleDrawer = (id: string) => setOpenId((cur) => (cur === id ? null : id));
 
   return (
     <section className="section lux-menu-section" id="caterer-menu">
@@ -57,8 +66,8 @@ export default function CatererMenu() {
         <h2 className="lux-menu-heading">The Signature Menu</h2>
         <div className="lux-menu-rule"><span></span><span className="lux-menu-rule-icon">✦</span><span></span></div>
         <p className="lux-menu-subhead">
-          Designed for intimate gatherings, corporate events, weddings, and unforgettable celebrations.<br />
-          Every dish prepared fresh — customized to your occasion.
+          Open a category and tap the dishes you&apos;d love at your event.<br />
+          Chef Frankie confirms every selection in your custom quote.
         </p>
       </div>
 
@@ -66,19 +75,23 @@ export default function CatererMenu() {
       <div className="lux-cat-grid">
         {menuCategories.map((cat) => {
           const isOpen = openId === cat.id;
+          const count = cat.columns ? cat.columns.flat().filter((i) => selected.includes(itemKey(cat.title, i.name))).length : 0;
           return (
             <div className={`lux-cat-card${isOpen ? " expanded" : ""}`} data-menu={cat.id} key={cat.id}>
               <div className="lux-cat-inner">
                 <div className="lux-cat-icon">{icons[cat.id]}</div>
-                <h3 className="lux-cat-title">{cat.title}</h3>
+                <h3 className="lux-cat-title">
+                  {cat.title}
+                  {count > 0 && <span className="lux-cat-count" aria-label={`${count} selected`}>{count}</span>}
+                </h3>
                 <p className="lux-cat-desc">{cat.description}</p>
                 <button
                   className={`lux-cat-btn${isOpen ? " active" : ""}`}
-                  onClick={() => toggle(cat.id)}
+                  onClick={() => toggleDrawer(cat.id)}
                   aria-expanded={isOpen}
                   aria-controls={`drawer-${cat.id}`}
                 >
-                  <span>{isOpen ? "Close Menu" : "View Menu"}</span>
+                  <span>{isOpen ? "Close Menu" : cat.columns ? "View & Select" : "View Menu"}</span>
                   <svg className="lux-btn-arrow" viewBox="0 0 16 16"><path d="M8 2v12M2 8l6 6 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
                 </button>
               </div>
@@ -93,12 +106,26 @@ export default function CatererMenu() {
                   <div className="lux-drawer-inner">
                     {cat.columns.map((col, ci) => (
                       <div className="lux-item-col" key={ci}>
-                        {col.map((item) => (
-                          <div className="lux-item" key={item.name}>
-                            <span className="lux-item-name">{item.name}</span>
-                            <span className="lux-item-note">{item.note}</span>
-                          </div>
-                        ))}
+                        {col.map((item) => {
+                          const key = itemKey(cat.title, item.name);
+                          const on = selected.includes(key);
+                          return (
+                            <button
+                              type="button"
+                              className={`lux-item lux-item-pick${on ? " is-picked" : ""}`}
+                              key={item.name}
+                              aria-pressed={on}
+                              disabled={!on && isFull}
+                              onClick={() => toggle(key)}
+                            >
+                              <span className="lux-item-text">
+                                <span className="lux-item-name">{item.name}</span>
+                                <span className="lux-item-note">{item.note}</span>
+                              </span>
+                              <span className="lux-item-mark" aria-hidden="true">{on ? "✓" : "+"}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     ))}
                   </div>
@@ -122,6 +149,51 @@ export default function CatererMenu() {
         })}
       </div>
 
+      {/* YOUR EVENT MENU — selection summary → Build My Event */}
+      <div className="event-menu-summary" id="caterer-build" aria-live="polite">
+        <div className="event-menu-summary-head">
+          <p className="section-tag">Build My Event</p>
+          <h3 className="lux-docs-title">
+            {selected.length ? `Your Event Menu · ${selected.length} ${selected.length === 1 ? "dish" : "dishes"}` : "Your Event Menu"}
+          </h3>
+          <p className="lux-docs-sub">
+            {selected.length
+              ? "Add your event details next. Chef Frankie reviews availability, confirms your selections and sends your custom quote."
+              : "Tap dishes in any category above to start your menu — or skip ahead and tell Chef what you have in mind."}
+          </p>
+        </div>
+        {groups.length > 0 && (
+          <div className="event-menu-groups">
+            {groups.map((g) => (
+              <div className="event-menu-group" key={g.category}>
+                <p className="event-menu-group-title">{g.category}</p>
+                <ul className="event-chip-list">
+                  {g.items.map((i) => (
+                    <li key={i.key}>
+                      <button type="button" className="event-chip" onClick={() => remove(i.key)} aria-label={`Remove ${i.name}`}>
+                        {i.name} <span aria-hidden="true">×</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="lux-cta-btns">
+          <a
+            className="btn-primary"
+            href="/catering/inquiry"
+            style={{ background: "var(--gold)", color: "#0a0800", boxShadow: "0 8px 30px rgba(201,168,76,.30)" }}
+          >
+            {selected.length ? "Continue — Event Details" : "Build My Event"}
+          </a>
+          {selected.length > 0 && (
+            <button type="button" className="btn-ghost event-menu-clear" onClick={clear}>Clear selections</button>
+          )}
+        </div>
+      </div>
+
       {/* MENU DOCUMENTS */}
       <div className="lux-menu-docs">
         <div className="lux-docs-header">
@@ -129,12 +201,13 @@ export default function CatererMenu() {
           <h3 className="lux-docs-title">Our Catering Menus</h3>
           <p className="lux-docs-sub">Tap any menu to view full size. Printable PDFs available upon request.</p>
         </div>
-        <div className="lux-docs-grid">
+        <div className="lux-docs-grid lux-docs-grid--pair">
           {menuDocs.map((doc) => (
             <div className="lux-doc-card" key={doc.id} onClick={() => setModalDoc(doc.src)} role="button" tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setModalDoc(doc.src); }}>
+              aria-label={`View ${doc.title}`}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModalDoc(doc.src); } }}>
               <div className="lux-doc-preview">
-                <img src={doc.src} alt={doc.alt} />
+                <img src={doc.src} alt={doc.alt} loading="lazy" />
                 <div className="lux-doc-overlay">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 3h6v6M10 14L21 3M21 16v5H3V3h5" /></svg>
                   <span>View Full Menu</span>
@@ -146,73 +219,44 @@ export default function CatererMenu() {
               </div>
             </div>
           ))}
-          {/* Future menu slot */}
-          <div className="lux-doc-card lux-doc-future">
-            <div className="lux-doc-preview lux-doc-empty">
-              <svg viewBox="0 0 40 40" fill="none"><path d="M20 12v16M12 20h16" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
-              <span>Coming Soon</span>
-            </div>
-            <div className="lux-doc-info">
-              <h4>Seasonal Menu</h4>
-              <p>Holiday · Wedding · Corporate specials added here</p>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* PACKAGES */}
-      <div className="lux-packages">
-        <div className="lux-packages-header">
-          <p className="section-tag">Choose Your Experience</p>
-          <h3 className="lux-pkg-title">Catering Packages</h3>
-          <p className="lux-pkg-sub">
-            All packages include setup, service, and breakdown. Custom quotes available for larger events.
-          </p>
-        </div>
-        <div className="lux-pkg-grid">
-          {packages.map((pkg) => (
-            <div
-              key={pkg.badge}
-              className={`lux-pkg-card lux-pkg-${pkg.tone}${pkg.featured ? " lux-pkg-featured" : ""}`}
-            >
-              {pkg.featured && <div className="lux-pkg-popular">Most Popular</div>}
-              <div className="lux-pkg-badge">{pkg.badge}</div>
-              <div className="lux-pkg-guests">{pkg.guests}</div>
-              <div className="lux-pkg-price">{pkg.price.prefix}<strong>{pkg.price.strong}</strong></div>
-              <ul className="lux-pkg-list">
-                {pkg.features.map((f) => <li key={f}>{f}</li>)}
-              </ul>
-              <a className={`lux-pkg-btn${pkg.featured ? " lux-pkg-btn-gold" : ""}`} href={`/catering/inquiry?package=${encodeURIComponent(pkg.badge)}`}>
-                {pkg.cta}
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* MENU CTA */}
-      <div className="lux-menu-cta">
-        <div className="lux-menu-cta-inner">
-          <p className="lux-cta-tag">✦ &nbsp; Let&apos;s Create Your Perfect Menu &nbsp; ✦</p>
-          <h3 className="lux-cta-heading">Every Event Deserves<br />a Five-Star Experience</h3>
-          <p className="lux-cta-sub">
-            Tell us about your event and we&apos;ll craft a custom menu that fits your vision, guest count, and budget.
-          </p>
-          <div className="lux-cta-btns">
-            <a
-              className="btn-primary"
-              href="/catering/inquiry?package=Custom"
-              style={{ background: "var(--gold)", color: "#0a0800", boxShadow: "0 8px 30px rgba(201,168,76,.30)" }}
-            >
-              Request a Quote
-            </a>
-            <a className="btn-ghost" href={tel(CATERING_PHONE)}>Schedule Consultation</a>
+      {/* PACKAGES — hidden until Chef confirms tiers + prices (data/launch.ts) */}
+      {SHOW_PACKAGE_PRICING && (
+        <div className="lux-packages">
+          <div className="lux-packages-header">
+            <p className="section-tag">Choose Your Experience</p>
+            <h3 className="lux-pkg-title">Catering Packages</h3>
+            <p className="lux-pkg-sub">
+              All packages include setup, service, and breakdown. Custom quotes available for larger events.
+            </p>
           </div>
-          <p className="lux-cta-contact">
-            {CHEF_NAME} &nbsp;·&nbsp; {CATERING_PHONE_DISPLAY} &nbsp;·&nbsp; {CATERING_EMAIL}
-          </p>
+          <div className="lux-pkg-grid">
+            {packages.map((pkg) => (
+              <div
+                key={pkg.badge}
+                className={`lux-pkg-card lux-pkg-${pkg.tone}${pkg.featured ? " lux-pkg-featured" : ""}`}
+              >
+                {pkg.featured && <div className="lux-pkg-popular">Most Popular</div>}
+                <div className="lux-pkg-badge">{pkg.badge}</div>
+                <div className="lux-pkg-guests">{pkg.guests}</div>
+                <div className="lux-pkg-price">{pkg.price.prefix}<strong>{pkg.price.strong}</strong></div>
+                <ul className="lux-pkg-list">
+                  {pkg.features.map((f) => <li key={f}>{f}</li>)}
+                </ul>
+                <a className={`lux-pkg-btn${pkg.featured ? " lux-pkg-btn-gold" : ""}`} href={`/catering/inquiry?package=${encodeURIComponent(pkg.badge)}`}>
+                  {pkg.cta}
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      <p className="lux-cta-contact event-menu-contact">
+        Prefer to talk it through? {CHEF_NAME} &nbsp;·&nbsp; <a href={tel(CATERING_PHONE)}>{CATERING_PHONE_DISPLAY}</a> &nbsp;·&nbsp; {CATERING_EMAIL}
+      </p>
 
       {/* MENU IMAGE MODAL */}
       <MenuModal src={modalDoc} onClose={() => setModalDoc(null)} />

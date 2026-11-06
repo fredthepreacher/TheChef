@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./launch.css";
 import { CATERING_EMAIL } from "@/data/contact";
+import { SITE_INDEXABLE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://thechef.vercel.app"), // TODO: replace with the final custom domain
+  // Set NEXT_PUBLIC_SITE_URL to the purchased domain before launch (lib/site.ts).
+  metadataBase: new URL(SITE_URL),
+  // Previews / branch deployments / local builds are never indexed.
+  robots: SITE_INDEXABLE ? { index: true, follow: true } : { index: false, follow: false },
   title: {
-    default: "The Chef | Luxury Catering & Music",
+    default: "The Chef | Luxury Catering & Entertainment",
     template: "%s | The Chef",
   },
   description:
-    "The Chef — private chef, luxury event catering, and original music. Unforgettable food experiences for weddings, corporate events, and celebrations, plus bold original sound from The Chef Music.",
+    "The Chef — private chef and luxury event catering by Chef Frankie, plus original music from The Chef, Entertainer. Build your menu and request a custom quote for weddings, corporate events, and celebrations.",
   keywords: [
     "private chef",
     "luxury catering",
@@ -17,12 +22,13 @@ export const metadata: Metadata = {
     "wedding catering",
     "corporate catering",
     "The Chef Catering Services",
+    "The Chef Entertainer",
     "The Chef Music",
   ],
   openGraph: {
-    title: "The Chef | Luxury Catering & Music",
+    title: "The Chef | Luxury Catering & Entertainment",
     description:
-      "One name, two crafts: luxury private-chef catering and original music. Book The Chef for your next unforgettable event.",
+      "One name, two crafts: luxury private-chef catering and original music. Build your event menu and book The Chef.",
     type: "website",
     images: [
       {
@@ -35,31 +41,31 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Chef | Luxury Catering & Music",
+    title: "The Chef | Luxury Catering & Entertainment",
     description:
-      "Luxury private-chef catering and original music. Book The Chef for your next unforgettable event.",
+      "Luxury private-chef catering and original music. Build your event menu and book The Chef.",
     images: ["/assets/chef_at_island.jpg"],
   },
 };
 
-/** JSON-LD structured data — helps Google & AI search understand the business. */
+/**
+ * JSON-LD structured data — verified facts only. No self-served
+ * aggregateRating (not eligible for LocalBusiness rich results and not
+ * independently verified), no priceRange, and no address/areaServed until the
+ * owner confirms the real service area.
+ */
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "FoodEstablishment",
   name: "The Chef Catering Services",
   alternateName: "The Chef",
+  url: SITE_URL,
   description:
     "Private chef and luxury catering for weddings, corporate events, church gatherings, and celebrations. Five star meals, served with love.",
   email: CATERING_EMAIL,
   telephone: "+1-314-500-3601",
   servesCuisine: ["Soul Food", "Caribbean", "American", "Seafood"],
-  priceRange: "$$-$$$",
-  image: "/assets/chef_at_island.jpg",
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "5",
-    reviewCount: "9",
-  },
+  image: `${SITE_URL}/assets/chef_at_island.jpg`,
   founder: { "@type": "Person", name: "Chef Frankie" },
 };
 

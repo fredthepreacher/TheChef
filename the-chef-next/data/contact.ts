@@ -1,13 +1,12 @@
 /**
  * Single source of truth for all contact info.
  *
- * NOTE (flagged during conversion):
- * - Catering email + phone are the real, verified values used across the old site.
- * - The old gallery.html CTA used "thechefcateringservices@email.com" (placeholder) —
- *   it now points to the real catering email below.
- * - The music email "cheftherapperr@email.com" looks like a placeholder
- *   (@email.com is not a real provider). Update MUSIC_EMAIL when the
- *   real address is available — it is only referenced here.
+ * - Catering email + phone are the real, verified values (they also appear on
+ *   Chef Frankie's printed menus).
+ * - Entertainer booking: the old value "cheftherapperr@email.com" was a
+ *   placeholder (@email.com is not a real mailbox) and has been removed.
+ *   Set ENTERTAINER_BOOKING to the owner-approved route to show the
+ *   "Booking & Features" section. Until then it stays hidden — never invent one.
  */
 
 export const CATERING_EMAIL = "Thechefcs@gmail.com";
@@ -15,13 +14,16 @@ export const CATERING_PHONE = "3145003601";
 export const CATERING_PHONE_DISPLAY = "314.500.3601";
 export const CHEF_NAME = "Chef Frankie";
 
-// TODO: replace with the real music/booking email when available.
-export const MUSIC_EMAIL = "cheftherapperr@email.com";
+export type BookingRoute = { email?: string; phone?: string; phoneDisplay?: string };
+
+/** Owner-approved Entertainer booking contact. `null` = not supplied yet. */
+export const ENTERTAINER_BOOKING: BookingRoute | null = null;
 
 export const BRAND = {
   catering: "The Chef Catering",
   cateringFull: "The Chef Catering Services",
   music: "The Chef Music",
+  entertainer: "The Chef — Entertainer",
   tagline: "Five Star Meals · Served With Love",
   taglineAlt: "Five Star Meals on Wheels",
 };

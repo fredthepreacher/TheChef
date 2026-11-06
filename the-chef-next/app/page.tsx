@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import SplitStage from "@/components/SplitStage";
 
 export const metadata: Metadata = {
-  title: "The Chef | Luxury Catering & Music — One Name, Two Crafts",
+  title: { absolute: "The Chef | Luxury Catering & Entertainment — One Name, Two Crafts" },
   description:
-    "Drag to explore two worlds: The Chef Catering — private chef, luxury event catering, weddings and celebrations — and The Chef Music — original sound, live shows, and bold artistry.",
+    "Drag to explore two worlds: The Chef Catering — private chef and luxury event catering with a menu you build yourself — and The Chef, Entertainer — original music and bold artistry.",
   alternates: { canonical: "/" },
 };
 

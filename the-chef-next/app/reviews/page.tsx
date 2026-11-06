@@ -3,11 +3,12 @@ import Link from "next/link";
 import ReviewsSection from "@/components/ReviewsSection";
 import BodyClass from "@/components/BodyClass";
 import { CATERING_PHONE, BRAND, tel } from "@/data/contact";
+import { SHOW_UNVERIFIED_STATS } from "@/data/launch";
 
 export const metadata: Metadata = {
   title: "Client Reviews",
   description:
-    "9 verified five-star reviews for The Chef Catering Services — weddings, baby showers, corporate events, and private dinners. Real clients, real experiences.",
+    "Five-star client reviews for The Chef Catering Services — weddings, baby showers, corporate events, and private dinners. Real clients, real experiences.",
   alternates: { canonical: "/reviews" },
   openGraph: {
     title: "Client Reviews | The Chef Catering Services",
@@ -57,12 +58,15 @@ export default function ReviewsPage() {
             <div className="rv-trust-text">5 Star Rating</div>
           </div>
         </div>
-        <div className="rv-trust-item">
-          <div>
-            <div className="rv-trust-num">200+</div>
-            <div className="rv-trust-text">Events Catered</div>
+        {/* "200+ Events Catered" is owner-unverified — hidden until confirmed (data/launch.ts). */}
+        {SHOW_UNVERIFIED_STATS && (
+          <div className="rv-trust-item">
+            <div>
+              <div className="rv-trust-num">200+</div>
+              <div className="rv-trust-text">Events Catered</div>
+            </div>
           </div>
-        </div>
+        )}
         <div className="rv-trust-item">
           <div className="rv-trust-text" style={{ textAlign: "center", lineHeight: 1.8 }}>
             Private Events &nbsp;·&nbsp; Corporate Catering<br />

@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
+import { SITE_INDEXABLE, SITE_URL } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
+  if (!SITE_INDEXABLE) return { rules: { userAgent: "*", disallow: "/" } };
   return {
     rules: { userAgent: "*", allow: "/", disallow: ["/crm", "/api/"] },
-    sitemap: "https://thechef.vercel.app/sitemap.xml", // TODO: replace with the final custom domain
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

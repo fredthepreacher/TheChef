@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { inquirySchema } from "@/lib/crm/domain";
+import { composeMenuNotes, inquirySchema } from "@/lib/crm/domain";
 import { intakeClient } from "@/lib/supabase/intake";
 import { packages } from "@/data/menu";
 export const runtime = "nodejs";
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   const parsed = inquirySchema.safeParse(input);
   if (!parsed.success)
     return reply(
-      "Please check your contact information, event date, guest count and consent.",
+      "Please check your contact details, event date, guest count, event location and consent.",
       400,
     );
   const secret = process.env.INQUIRY_RATE_LIMIT_SECRET;
@@ -98,9 +98,15 @@ export async function POST(request: NextRequest) {
       );
     }
   }
-  const { turnstile_token, website, ...inquiry } = parsed.data;
+  const { turnstile_token, website, ...fields } = parsed.data;
   void turnstile_token;
   void website;
+  // Website menu selections ride along in menu_notes so they reach the event
+  // menu workspace through the existing hosted pipeline (see composeMenuNotes).
+  const inquiry = {
+    ...fields,
+    menu_notes: composeMenuNotes(fields.selected_menu_items, fields.menu_notes),
+  };
   const hash = (value: string) =>
     createHmac("sha256", secret).update(value).digest("hex");
   // Vercel overwrites this header. Other hosts share a conservative global limit.
@@ -135,7 +141,7 @@ export async function POST(request: NextRequest) {
         503,
       );
     return reply(
-      "Your catering inquiry has been received. Chef will contact you to discuss availability and your menu. This is not a confirmed booking.",
+      "Your request is in. Chef Frankie will review availability, confirm your selections and send your custom quote. Your date is not reserved until your quote is approved and the required deposit is paid.",
       201,
     );
   } catch {

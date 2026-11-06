@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
-
-const BASE = "https://thechef.vercel.app"; // TODO: replace with the final custom domain
+import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
-    { url: `${BASE}/`, changeFrequency: "monthly", priority: 1 },
-    { url: `${BASE}/gallery`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/reviews`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/`, changeFrequency: "monthly", priority: 1 },
+    { url: `${SITE_URL}/catering/inquiry`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${SITE_URL}/gallery`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/reviews`, changeFrequency: "monthly", priority: 0.8 },
   ];
 }

@@ -8,6 +8,13 @@ export type MenuCategory = {
   columns: [MenuItem[], MenuItem[]] | null;
 };
 
+/**
+ * Catering menu. Source of truth: Chef Frankie's printed "The Chef's Catering
+ * Menu" (public/assets/menu_full_doc.jpg) plus items already approved on the
+ * previous site (oxtail, seafood boil, banana pudding, trifle cups, custom
+ * cakes/platters). Items are selectable in "Build My Event"; selections are a
+ * request — Chef confirms every item in the custom quote.
+ */
 export const menuCategories: MenuCategory[] = [
   {
     id: "appetizers",
@@ -21,6 +28,8 @@ export const menuCategories: MenuCategory[] = [
         { name: "Caprese Bites", note: "bocconcini, heirloom tomato, balsamic glaze" },
         { name: "Egg Rolls", note: "sweet chili dipping sauce" },
         { name: "Ham & Cheese Sliders", note: "honey mustard, brioche" },
+        { name: "Cheeseburger Sliders", note: "aged cheddar, pickles, secret sauce" },
+        { name: "Chips & Salsa", note: "house-roasted salsa, guacamole" },
       ],
       [
         { name: "Wings", note: "buffalo, bbq, or lemon pepper" },
@@ -28,6 +37,8 @@ export const menuCategories: MenuCategory[] = [
         { name: "Deviled Eggs", note: "classic recipe, paprika, chives" },
         { name: "Pineapple Teriyaki Meatballs", note: "scallions, sesame" },
         { name: "Customized Kabobs", note: "seasonal selections" },
+        { name: "Baked Potato Rounds", note: "crème fraîche, chives, bacon" },
+        { name: "Cheese Quesadilla", note: "sour cream, pico de gallo" },
       ],
     ],
   },
@@ -83,16 +94,20 @@ export const menuCategories: MenuCategory[] = [
         { name: "Collard Greens", note: "smoked turkey, garlic" },
         { name: "Sweet Potatoes", note: "brown sugar, cinnamon" },
         { name: "Rice & Peas", note: "coconut, scallions, thyme" },
+        { name: "White Rice", note: "fluffy, buttery" },
         { name: "Mashed Potatoes", note: "creamy, roasted garlic" },
+        { name: "Potato Salad", note: "creamy, fresh herbs" },
         { name: "Pasta Salad", note: "italian dressing, vegetables" },
       ],
       [
         { name: "Corn on the Cob", note: "butter, sea salt" },
         { name: "Mixed Vegetables", note: "seasonal medley" },
         { name: "Caesar Salad", note: "romaine, parmesan, croutons" },
+        { name: "Garden Salad", note: "mixed greens, cucumber, tomato, vinaigrette" },
         { name: "Baked Beans", note: "brown sugar, bacon" },
-        { name: "Garlic Bread / Cornbread", note: "biscuits, garlic knots" },
         { name: "Coleslaw", note: "classic, creamy" },
+        { name: "Garlic Bread / Garlic Knots", note: "fresh-baked" },
+        { name: "Cornbread / Biscuits", note: "fresh-baked" },
       ],
     ],
   },
@@ -103,14 +118,14 @@ export const menuCategories: MenuCategory[] = [
       "Cakes, pies, banana pudding, brownies, fruit platters, and chocolate-dipped strawberries for a sweet finish.",
     columns: [
       [
-        { name: "Cakes", note: "chocolate, vanilla, red velvet, cheesecake, lemon" },
+        { name: "Cakes", note: "chocolate, vanilla, red velvet, carrot, cheesecake, lemon" },
         { name: "Pies", note: "apple, pecan, key lime, cherry, chocolate silk" },
         { name: "Banana Pudding", note: "classic southern recipe" },
         { name: "Brownies", note: "fudge, walnut, peanut butter, white chocolate" },
       ],
       [
         { name: "Cookies", note: "chocolate chip, oatmeal, peanut butter, sugar" },
-        { name: "Fruit Platters", note: "mixed, tropical, berry, seasonal" },
+        { name: "Fruit Platters", note: "mixed, tropical, berry, citrus, melon, seasonal" },
         { name: "Dessert Trifle Cups", note: "individual servings, seasonal flavors" },
         { name: "Custom Event Cake", note: "upon request, any occasion" },
       ],
@@ -148,7 +163,8 @@ export const menuDocs: MenuDoc[] = [
     src: "/assets/menu_family_doc.png",
     alt: "Family Menu — The Chef Caters To You LLC",
     title: "Family Package Menu",
-    subtitle: "Guest Specials · Family 8–12 · Starting at $800",
+    // The printed menu lists no price ("Pricing subject to change").
+    subtitle: "Guest Specials · Family 8–12 · Custom quote",
   },
   {
     id: "menu-full",
@@ -169,6 +185,12 @@ export type Package = {
   tone: "silver" | "gold" | "platinum";
 };
 
+/**
+ * Package cards from the previous site. NOT shown at launch
+ * (data/launch.ts → SHOW_PACKAGE_PRICING = false): no supplied source confirms
+ * these tiers or prices. Kept so the CRM can still read package snapshots on
+ * older leads and so they can be re-enabled once Chef confirms them.
+ */
 export const packages: Package[] = [
   {
     badge: "Silver",

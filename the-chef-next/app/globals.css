@@ -386,8 +386,8 @@ body  {
   white-space: nowrap;
 }
 body.is-locked .hint { opacity: .90; }
-body.locked-chef   .hint::before { content: "Locked · Chef The Caterer  –  "; color: var(--gold);  font-weight: 600; }
-body.locked-rapper .hint::before { content: "Locked · Chef The Rapper  –  ";  color: var(--ember); font-weight: 600; }
+body.locked-chef   .hint::before { content: "Locked · The Chef — Catering  –  "; color: var(--gold);  font-weight: 600; }
+body.locked-rapper .hint::before { content: "Locked · The Chef — Entertainer  –  ";  color: var(--ember); font-weight: 600; }
 
 /* ─── UNLOCK BUTTON ─── */
 /* JS sets display:none initially, display:flex when locked.

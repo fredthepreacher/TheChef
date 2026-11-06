@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  MAX_MENU_SELECTIONS,
+  catalogKeys,
+  groupSelection,
+} from "@/lib/catering/menu-catalog";
 
 export const stages = [
   "new_inquiry",
@@ -69,6 +74,9 @@ export const documentCategories = [
 export const label = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const text = z.string().trim().max(200);
+/** Guest menu notes are capped so notes + the folded selection list always fit
+ *  the 4000-char event_menus.custom_menu_notes check. */
+export const MENU_NOTES_MAX = 1500;
 const notes = z.string().trim().max(4000).default("");
 export const date = z
   .string()
@@ -105,12 +113,27 @@ export const inquirySchema = z
       "private_chef",
       "full_service",
     ]),
+    /** City + ZIP of the event — required so Chef can confirm service area. */
+    event_location: text.min(2),
     venue_name: text.default(""),
     venue_address: text.default(""),
     coi_required: z.enum(["unknown", "yes", "no"]),
     budget: text.default(""),
     referral_source: text.default(""),
-    menu_notes: notes,
+    /** Dishes picked on the website menu ("Category: Item" catalog keys). */
+    selected_menu_items: z
+      .array(z.string().max(160))
+      .max(MAX_MENU_SELECTIONS)
+      .default([])
+      .refine(
+        (items) => items.every((i) => catalogKeys.has(i)),
+        "Unknown menu item",
+      )
+      .refine(
+        (items) => new Set(items).size === items.length,
+        "Duplicate menu item",
+      ),
+    menu_notes: z.string().trim().max(MENU_NOTES_MAX).default(""),
     dietary_notes: notes,
     inquiry_notes: notes,
     consent: z.literal(true),
@@ -119,6 +142,23 @@ export const inquirySchema = z
   })
   .strict();
 export type Inquiry = z.infer<typeof inquirySchema>;
+
+/**
+ * Fold the website menu selections into `menu_notes` so they travel through
+ * the existing (already hosted) pipeline without a migration: lead → event
+ * menu_snapshot → event_menus.custom_menu_notes (DB check: ≤ 4000 chars).
+ * The structured `selected_menu_items` array is kept alongside for the CRM.
+ */
+export function composeMenuNotes(selected: readonly string[], guestNotes: string) {
+  const lines = groupSelection(selected).map(
+    (g) => `${g.category}: ${g.items.map((i) => i.name).join(", ")}`,
+  );
+  const notes = guestNotes.trim();
+  const parts: string[] = [];
+  if (lines.length) parts.push(["Selected on website:", ...lines].join("\n"));
+  if (notes) parts.push(lines.length ? `Guest notes:\n${notes}` : notes);
+  return parts.join("\n\n");
+}
 export const stageSchema = z
   .object({
     id: z.uuid(),

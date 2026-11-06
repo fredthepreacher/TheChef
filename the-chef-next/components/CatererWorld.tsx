@@ -1,16 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { SHOW_UNVERIFIED_STATS } from "@/data/launch";
 import CatererMenu from "./CatererMenu";
 import ReviewsPreview from "./ReviewsPreview";
 import BookingCTA from "./BookingCTA";
 import CateringHeroVideo from "./CateringHeroVideo";
+import CurrentYear from "./CurrentYear";
+import { ServiceLanes, HowItWorks, CateringFAQ, FinalCTA } from "./catering/CateringSections";
 
-/** The caterer side of the split-screen — luxury catering brand world. */
+/**
+ * The caterer side of the split-screen — luxury catering brand world.
+ * Conversion order: hero → choose what you need → menu (select dishes) →
+ * how it works → story → reviews → Book The Chef → FAQ → final CTA.
+ */
 export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
   return (
     <section className="world caterer" id="catererWorld">
-      <nav className={`nav caterer-nav${navVisible ? " visible" : ""}`} id="catererNav">
+      <nav className={`nav caterer-nav${navVisible ? " visible" : ""}`} id="catererNav" aria-label="Catering">
         <div className="nav-inner">
           <img
             className="nav-logo-mark"
@@ -20,12 +27,12 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
             height={40}
           />
           <span className="nav-logo">The Chef</span>
-          <a className="nav-link" href="#caterer-about">About</a>
           <a className="nav-link" href="#caterer-menu">Menu</a>
+          <a className="nav-link" href="#caterer-how">How It Works</a>
           <a className="nav-link" href="#caterer-reviews">Reviews</a>
           <Link className="nav-link" href="/gallery">Our Work</Link>
-          <a className="nav-link btn-primary" href="#caterer-book" style={{ padding: "8px 16px", fontSize: 11 }}>
-            Book Now
+          <a className="nav-link btn-primary" href="/catering/inquiry" style={{ padding: "8px 16px", fontSize: 11 }}>
+            Build My Event
           </a>
         </div>
       </nav>
@@ -46,13 +53,22 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
             Unforgettable food experiences for private events, celebrations, and every occasion worth savoring.
           </p>
           <div className="cta-row">
-            <a className="btn-primary" href="#caterer-menu">View Menu</a>
-            <a className="btn-ghost" href="#caterer-book">Book Catering</a>
+            <a className="btn-primary" href="/catering/inquiry">Build My Event</a>
+            <a className="btn-ghost" href="#caterer-menu">Explore Menu</a>
           </div>
         </div>
       </div>
 
       <div className="page-sections">
+        {/* CHOOSE WHAT YOU NEED */}
+        <ServiceLanes />
+
+        {/* LUXURY MENU — selectable dishes → Your Event Menu → Build My Event */}
+        <CatererMenu />
+
+        {/* HOW IT WORKS */}
+        <HowItWorks />
+
         {/* ABOUT */}
         <section className="section" id="caterer-about">
           <p className="section-tag">The Story</p>
@@ -84,24 +100,30 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
                   loading="lazy"
                 />
               </figure>
-            <div className="about-stats">
-              <div className="stat-card"><div className="stat-num">200+</div><div className="stat-label">Events Catered</div></div>
-              <div className="stat-card"><div className="stat-num">5★</div><div className="stat-label">Avg. Client Rating</div></div>
-              <div className="stat-card"><div className="stat-num">8+</div><div className="stat-label">Years Experience</div></div>
-              <div className="stat-card"><div className="stat-num">12</div><div className="stat-label">Signature Dishes</div></div>
-            </div>
+              {/* Owner-unverified stats stay hidden (data/launch.ts → SHOW_UNVERIFIED_STATS). */}
+              {SHOW_UNVERIFIED_STATS && (
+                <div className="about-stats">
+                  <div className="stat-card"><div className="stat-num">200+</div><div className="stat-label">Events Catered</div></div>
+                  <div className="stat-card"><div className="stat-num">5★</div><div className="stat-label">Avg. Client Rating</div></div>
+                  <div className="stat-card"><div className="stat-num">8+</div><div className="stat-label">Years Experience</div></div>
+                  <div className="stat-card"><div className="stat-num">12</div><div className="stat-label">Signature Dishes</div></div>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* LUXURY MENU (accordion cards, menu docs, packages, CTA) */}
-        <CatererMenu />
-
-        {/* REVIEWS PREVIEW */}
+        {/* REVIEWS PREVIEW (+ optional video testimonial) */}
         <ReviewsPreview />
 
-        {/* BOOKING CTA */}
+        {/* BOOK THE CHEF (+ optional endorsement video) */}
         <BookingCTA />
+
+        {/* FAQ — owner-safe process facts only */}
+        <CateringFAQ />
+
+        {/* FINAL CTA */}
+        <FinalCTA />
 
         <footer className="site-footer">
           <span className="footer-brand">
@@ -116,7 +138,7 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
             />
             <span className="footer-logo">The Chef Catering</span>
           </span>
-          <span>© 2025 The Chef Catering · All Rights Reserved</span>
+          <span>© <CurrentYear /> The Chef Catering · All Rights Reserved</span>
         </footer>
       </div>
     </section>

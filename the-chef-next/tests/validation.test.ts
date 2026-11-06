@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { inquirySchema, stageSchema, eventSchema } from "../lib/crm/domain";
+import {
+  inquirySchema,
+  stageSchema,
+  eventSchema,
+  composeMenuNotes,
+  MENU_NOTES_MAX,
+} from "../lib/crm/domain";
+import { menuCatalog, normalizeSelection } from "../lib/catering/menu-catalog";
 const valid = {
   request_id: randomUUID(),
   first_name: "Test",
@@ -12,6 +19,7 @@ const valid = {
   event_type: "Dinner",
   requested_date: "2099-10-01",
   guest_count: "25",
+  event_location: "St. Louis, 63101",
   package_interest: "Gold",
   service_style: "buffet",
   coi_required: "unknown",
@@ -37,6 +45,12 @@ test("malformed and hostile inquiries fail validation", () => {
     { package_interest: "music" },
     { inquiry_notes: "a".repeat(4001) },
     { requested_start_time: "25:01" },
+    { event_location: "" },
+    { event_location: undefined },
+    { selected_menu_items: ["Main Course: Fake Dish"] },
+    { selected_menu_items: ["Main Course: Oxtail", "Main Course: Oxtail"] },
+    { selected_menu_items: "Main Course: Oxtail" },
+    { menu_notes: "a".repeat(MENU_NOTES_MAX + 1) },
   ])
     assert.equal(
       inquirySchema.safeParse({ ...valid, ...patch }).success,
@@ -71,5 +85,48 @@ test("event validation rejects invalid UUIDs, dates and counts", () => {
       status: "booked",
     }).success,
     false,
+  );
+});
+
+test("website menu selections validate against the catalog", () => {
+  const p = inquirySchema.parse({
+    ...valid,
+    selected_menu_items: ["Main Course: Oxtail", "Desserts: Banana Pudding"],
+  });
+  assert.deepEqual(p.selected_menu_items, [
+    "Main Course: Oxtail",
+    "Desserts: Banana Pudding",
+  ]);
+  assert.deepEqual(inquirySchema.parse(valid).selected_menu_items, []);
+});
+
+test("menu notes fold selections in and always fit the 4000-char event menu check", () => {
+  assert.equal(composeMenuNotes([], "Just vibes"), "Just vibes");
+  assert.equal(composeMenuNotes([], ""), "");
+  const two = composeMenuNotes(
+    ["Main Course: Oxtail", "Main Course: Jerk Chicken", "Sides & Bread: Rice & Peas"],
+    "Extra spicy",
+  );
+  assert.equal(
+    two,
+    [
+      "Selected on website:",
+      "Main Course: Jerk Chicken, Oxtail",
+      "Sides & Bread: Rice & Peas",
+      "",
+      "Guest notes:",
+      "Extra spicy",
+    ].join("\n"),
+  );
+  // Worst case: every selectable dish + the longest allowed guest notes.
+  const all = normalizeSelection(menuCatalog.map((i) => i.key));
+  const worst = composeMenuNotes(all, "x".repeat(MENU_NOTES_MAX));
+  assert.ok(worst.length <= 4000, `composed notes are ${worst.length} chars`);
+});
+
+test("selection normalizer drops unknown, duplicate and non-string entries", () => {
+  assert.deepEqual(
+    normalizeSelection(["Desserts: Cookies", "nope", 7, "Desserts: Cookies", "Appetizers: Wings"]),
+    ["Appetizers: Wings", "Desserts: Cookies"],
   );
 });
