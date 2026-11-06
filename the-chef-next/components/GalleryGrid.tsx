@@ -14,7 +14,7 @@ import {
   type GalleryImage,
   type GalleryCategory,
 } from "@/data/gallery";
-import { CATERING_EMAIL, BRAND, mailto } from "@/data/contact";
+import { BRAND } from "@/data/contact";
 import Lightbox from "./Lightbox";
 
 type Filter = "all" | GalleryCategory;
@@ -201,7 +201,7 @@ export default function GalleryGrid() {
           Whether it&apos;s an intimate dinner for 10 or a celebration for 500 — The Chef brings five-star execution,
           warmth, and flavor to every table.
         </p>
-        <a className="btn-gold" href={mailto(CATERING_EMAIL, "Event Booking Inquiry")}>Book Your Event</a>
+        <a className="btn-gold" href="/catering/inquiry">Book Your Event</a>
         <Link className="btn-ghost-gold" href="/">Explore the Full Site</Link>
       </div>
 

@@ -1,10 +1,7 @@
-import { CATERING_EMAIL, CATERING_PHONE, mailto, tel } from "@/data/contact";
+import { CATERING_PHONE, tel } from "@/data/contact";
 
 /**
- * Booking CTA — mailto/tel for now.
- * TODO (future): swap the mailto for a booking form posting to an API route
- * (app/api/inquiry/route.ts) with the email provider key in an env var.
- * Do NOT hardcode secrets here.
+ * Catering-only structured intake, with a direct phone fallback.
  */
 export default function BookingCTA() {
   return (
@@ -24,7 +21,7 @@ export default function BookingCTA() {
         your custom menu.
       </p>
       <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        <a className="btn-primary" href={mailto(CATERING_EMAIL, "Catering Inquiry")}>Send an Inquiry</a>
+        <a className="btn-primary" href="/catering/inquiry">Send an Inquiry</a>
         <a className="btn-ghost" href={tel(CATERING_PHONE)}>Call Directly</a>
       </div>
     </section>

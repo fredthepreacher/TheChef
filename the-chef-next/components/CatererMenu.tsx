@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { menuCategories, customMenuTags, menuDocs, packages } from "@/data/menu";
-import { CATERING_EMAIL, CATERING_PHONE, CATERING_PHONE_DISPLAY, CHEF_NAME, mailto, tel } from "@/data/contact";
+import { CATERING_EMAIL, CATERING_PHONE, CATERING_PHONE_DISPLAY, CHEF_NAME, tel } from "@/data/contact";
 import MenuModal from "./MenuModal";
 
 /** Inline icons for each menu category — ported from the original SVGs. */
@@ -112,7 +112,7 @@ export default function CatererMenu() {
                       <div className="lux-custom-tags">
                         {customMenuTags.map((t) => <span key={t}>{t}</span>)}
                       </div>
-                      <a className="lux-custom-cta" href="#caterer-book">Request a Custom Menu →</a>
+                      <a className="lux-custom-cta" href="/catering/inquiry?package=Custom">Request a Custom Menu →</a>
                     </div>
                   </div>
                 )}
@@ -182,7 +182,7 @@ export default function CatererMenu() {
               <ul className="lux-pkg-list">
                 {pkg.features.map((f) => <li key={f}>{f}</li>)}
               </ul>
-              <a className={`lux-pkg-btn${pkg.featured ? " lux-pkg-btn-gold" : ""}`} href="#caterer-book">
+              <a className={`lux-pkg-btn${pkg.featured ? " lux-pkg-btn-gold" : ""}`} href={`/catering/inquiry?package=${encodeURIComponent(pkg.badge)}`}>
                 {pkg.cta}
               </a>
             </div>
@@ -201,7 +201,7 @@ export default function CatererMenu() {
           <div className="lux-cta-btns">
             <a
               className="btn-primary"
-              href={mailto(CATERING_EMAIL, "Catering Quote Request")}
+              href="/catering/inquiry?package=Custom"
               style={{ background: "var(--gold)", color: "#0a0800", boxShadow: "0 8px 30px rgba(201,168,76,.30)" }}
             >
               Request a Quote
