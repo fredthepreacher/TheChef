@@ -12,7 +12,7 @@
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 .event-root h1 { font-family: 'Cormorant Garamond', serif; color: #fff; }
-.event-root .event-back { font-size: 13px; letter-spacing: .06em; }
+.event-root .event-back { display: inline-block; padding: 12px 0; font-size: 13px; letter-spacing: .06em; }
 .event-root .event-lede { font-size: 17px; color: rgba(255,255,255,.72); max-width: 640px; font-weight: 300; }
 .event-root .event-call { font-size: 14px; color: rgba(255,255,255,.55); }
 
