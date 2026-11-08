@@ -7,6 +7,7 @@
 - **Two hosted UI defects block the revision and response paths:**
   - D-1: a revision can never be issued.
   - D-2: a client cannot send a revision request or decline that includes a message.
+  - **Fix written and locally tested (2026-11-08):** migration `20261108212749_phase3_proposal_revision_fixes.sql` plus regression test `tests/proposal-revisions.test.ts`. It is **NOT yet applied to hosted** (Chef project paused; apply needs owner approval).
 - **Stripe test mode, Resend and AI Gateway are PENDING owner configuration.** They are not failed; credentials and decisions have not been supplied.
 - Phase 3 is **NOT HOSTED PASSED**.  
 **Account scope: temporary swap reversed.** On 2026-11-08 `the-chef-catering-crm` was paused (INACTIVE 14:39:57 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 14:44:31 local**). Wavy Sites was smoke-tested: `/api/health` returned `{"ok":true}`, and one labelled `/start` lead was stored with its alert sent. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
@@ -35,6 +36,7 @@ Phase 3 is represented by:
 - `20261108165321_phase3_revenue_hardening.sql` — additive corrections for Stripe amount/currency verification, authenticated manual-payment attribution, approval-gated lifecycle defaults, and upcoming-event reminders.
 - `20261108183134_phase3_fk_indexes.sql` — additive indexes for all 15 Phase 3 foreign-key columns identified by the hosted performance advisor.
 - `20261108191500_stripe_async_checkout_events.sql` — additive support for delayed-payment Checkout success/failure webhooks while retaining the existing signature, amount, currency, unknown-session, and duplicate-event gates.
+- `20261108212749_phase3_proposal_revision_fixes.sql` — fixes D-1 and D-2. `prepare_and_issue_proposal` reuses the event's agreement and appends the next agreement version (it refuses if an agreement was already accepted). `respond_to_proposal_by_token` changes only the issued version's status and stores the client's message on `crm_private.proposal_access_events.message`. New operator-only `list_proposal_responses(quote_id)` (SECURITY DEFINER, `search_path=''`, `is_operator()` check, no `anon` grant) feeds a "Client responses" panel on the CRM quote page. **Local only; not applied to hosted.**
 
 The primary Phase 3 migration was previously applied to the Chef hosted project. It has not been edited in place since that hosted application. The hardening migration passed the local migration suite and was **applied to hosted on 2026-11-08 at 17:36:40 UTC**, after a dry-run confirmed it was the only pending migration and the owner explicitly approved the push. Later dry-runs showed only the new foreign-key-index migration and then only the Stripe asynchronous-event migration; each was applied alone. Local/remote history now matches across all seven canonical versions.
 
@@ -342,6 +344,17 @@ Test data:
 - Responses without a message succeed.
 - Suggested fix (additive migration): store the client's message in `crm_private.proposal_access_events` (new nullable column) or a dedicated responses table instead of mutating the issued version. Then show it to the operator on the quote page.
 
+**Fix status (2026-11-08, local only):** migration `20261108212749_phase3_proposal_revision_fixes.sql` implements both suggested fixes, and the CRM quote page shows a "Client responses" panel. Regression test `tests/proposal-revisions.test.ts` runs on the real migrations in PGlite:
+- issue v1
+- request revision **with a message**: the version notes stay unchanged, the message is stored, the lead moves to `awaiting_decision`
+- create and issue **v2**: 1 agreement, versions superseded/sent, the old link rejected
+- decline v2 **with a message**: the lead becomes `lost`, with the message as the lost reason
+- create and issue v3, then accept it: `approved_deposit_pending`
+- further revision refused after acceptance
+- the response history is operator-only; unprovisioned and anonymous callers are refused
+
+With the migration temporarily removed, the same test fails with the hosted error (`Issued quote versions are immutable`). Full suite at the fix: typecheck, lint, **28 passed / 1 credential-gated skip**, Next.js production build (16 routes), `npm audit` 0 vulnerabilities, secret scan clean.
+
 **Smaller observations (non-blocking):**
 - The event readiness card still says "Deposit / payment: Not tracked in Phase 2".
 - The communications header says "Rules begin disabled" while all six are enabled.
@@ -367,7 +380,12 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 1. ~~Apply the hardening migration and re-run E1, E4 and F1–F4~~: **done** (2026-11-08, all pass).
 2. ~~Preview connection and real test inquiry~~: **done** (2026-11-08).
 3. ~~Core provider-independent UI path~~: **done** (Codex run).
-4. **Fix D-1 and D-2** (additive migration + tests), apply with owner approval, then re-run: issue a revision, decline with a message, request revision with a message, and approve the latest revision to deposit-pending.
+4. **Apply the D-1/D-2 fix to hosted.** It is written and tested locally (`20261108212749`). Steps:
+   1. With owner approval, swap the free slot again (pause `wavysites-web`, resume the Chef project).
+   2. Run `npx supabase db push --linked --dry-run`; expect only `20261108212749`.
+   3. Apply it with owner approval.
+   4. Re-run hosted UI: request revision with a message, issue v2, decline with a message, issue v3, accept to deposit-pending, and check the Client responses panel.
+   5. Clean up and swap back.
 5. **Stripe test mode**: PENDING owner configuration (test/restricted key + webhook secret in Preview only).
 6. **Resend**: PENDING owner configuration (Chef-owned sending domain, From/Reply-To, DNS). Also requires the Chef new-inquiry notification below.
 7. **AI Gateway**: PENDING (optional, draft-only, ≤ $5/month).
@@ -472,7 +490,10 @@ The provider-independent hosted work is complete. The following provider-backed 
 - `supabase/migrations/20261108165321_phase3_revenue_hardening.sql`
 - `supabase/migrations/20261108183134_phase3_fk_indexes.sql`
 - `supabase/migrations/20261108191500_stripe_async_checkout_events.sql`
+- `supabase/migrations/20261108212749_phase3_proposal_revision_fixes.sql`
 - `tests/database.test.ts`
+- `tests/proposal-revisions.test.ts`
+- `app/crm/(protected)/quotes/[id]/page.tsx` (Client responses panel)
 
 The unrelated `Claude outputs/` directory is outside the nested application and was not modified.
 
@@ -487,7 +508,7 @@ Green:
 - the core UI path
 
 Blocking:
-- **D-1** (revisions cannot be issued) and **D-2** (client messages break revise/decline).
+- **D-1** (revisions cannot be issued) and **D-2** (client messages break revise/decline). A fix is written and passes locally (`20261108212749` + `tests/proposal-revisions.test.ts`); it is **not yet applied or re-verified on hosted**.
 - Stripe test mode, Resend (including the missing Chef new-inquiry notification) and AI Gateway are **pending owner configuration**, not failed.
 
 Phase 4 has not begun. `main` and the production domain are untouched.

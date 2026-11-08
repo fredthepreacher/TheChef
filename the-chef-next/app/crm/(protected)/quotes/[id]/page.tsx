@@ -6,6 +6,13 @@ import { addQuoteLineItem, createQuoteRevision, issueProposal, revokeProposal, u
 import { Activity, Notice } from "@/components/crm/Shared";
 import { label, money, type Client, type QuoteLineItem, type QuoteVersion } from "@/lib/crm/domain";
 
+type ProposalResponse = {
+  version: number;
+  action: "accepted" | "declined" | "revision_requested";
+  message: string;
+  created_at: string;
+};
+
 type QuoteDetail = {
   id: string;
   quote_number: number;
@@ -40,6 +47,11 @@ export default async function QuoteDetailPage({ params, searchParams }: {
     .order("display_order");
   if (itemError) throw new Error("Could not load quote items");
   const items = itemData as QuoteLineItem[];
+  // Client responses (accept / decline / revision request, with any message) live in the
+  // private access-event log; this operator-only RPC is the read path.
+  const { data: responseData, error: responseError } = await db.rpc("list_proposal_responses", { p_quote_id: quote.id });
+  if (responseError) throw new Error("Could not load client responses");
+  const responses = (responseData ?? []) as ProposalResponse[];
   const p = await searchParams;
   const editable = version.status === "draft";
   const proposalUrl = p.proposal
@@ -140,6 +152,22 @@ export default async function QuoteDetailPage({ params, searchParams }: {
             <label className="crm-inline-check"><input type="checkbox" name="queue_email" value="true" /> Queue the proposal email after issuing</label>
             <button disabled={!items.length || version.total_cents <= 0}>Lock and issue proposal</button>
           </form>
+        </section>
+      )}
+      {responses.length > 0 && (
+        <section className="crm-panel" aria-labelledby="client-responses-title">
+          <h2 id="client-responses-title">Client responses</h2>
+          {responses.map((response) => (
+            <div className="crm-record-row" key={`${response.version}-${response.action}-${response.created_at}`}>
+              <span>
+                <strong>Version {response.version} · {label(response.action)}</strong>
+                <small>{new Date(response.created_at).toLocaleString()}</small>
+                {response.message
+                  ? <span style={{ whiteSpace: "pre-line" }}>“{response.message}”</span>
+                  : <small>No message</small>}
+              </span>
+            </div>
+          ))}
         </section>
       )}
       <Activity id={quote.id} relatedIds={[version.id]} />
