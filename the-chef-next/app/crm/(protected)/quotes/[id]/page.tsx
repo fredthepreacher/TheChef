@@ -49,9 +49,9 @@ export default async function QuoteDetailPage({ params, searchParams }: {
   const items = itemData as QuoteLineItem[];
   // Client responses (accept / decline / revision request, with any message) live in the
   // private access-event log; this operator-only RPC is the read path.
+  // Fails soft: if the migration that adds it is not applied yet, the quote still loads.
   const { data: responseData, error: responseError } = await db.rpc("list_proposal_responses", { p_quote_id: quote.id });
-  if (responseError) throw new Error("Could not load client responses");
-  const responses = (responseData ?? []) as ProposalResponse[];
+  const responses = (responseError ? [] : responseData ?? []) as ProposalResponse[];
   const p = await searchParams;
   const editable = version.status === "draft";
   const proposalUrl = p.proposal
