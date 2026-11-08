@@ -1,7 +1,15 @@
 # Phase 3 Revenue Operations Report
 
-**Status:** Local verification, hosted database acceptance, and provider-independent hosted UI acceptance have passed. The remaining Phase 3 boundaries are **Stripe test mode**, then **Resend**, then optional **AI Gateway**. Phase 3 is not marked fully hosted-passed until those approved provider increments are exercised.  
-**Account scope:** `wavysites-web` remains inactive by owner direction. It and `geos-ventures's Project` were not resumed, paused, deleted, or otherwise modified during this continuation.  
+**Status (reconciled 2026-11-08 ~14:45 local):**
+- Local verification passes at commit `e4f14ab`.
+- Hosted database acceptance passes (39/39).
+- The provider-independent **core** UI path passes: inquiry → lead → event → quote → proposal → acceptance → deposit-pending → ledger → revenue → communications (Codex run).
+- **Two hosted UI defects block the revision and response paths:**
+  - D-1: a revision can never be issued.
+  - D-2: a client cannot send a revision request or decline that includes a message.
+- **Stripe test mode, Resend and AI Gateway are PENDING owner configuration.** They are not failed; credentials and decisions have not been supplied.
+- Phase 3 is **NOT HOSTED PASSED**.  
+**Account scope: temporary swap reversed.** On 2026-11-08 `the-chef-catering-crm` was paused (INACTIVE 14:39:57 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 14:44:31 local**). Wavy Sites was smoke-tested: `/api/health` returned `{"ok":true}`, and one labelled `/start` lead was stored with its alert sent. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
 **Date:** 2026-11-08  
 **Branch:** `feat/catering-crm-revenue-ops`  
 **Approved Phase 2 base:** `2164ce326d9658c17dcb07cebc96543ce40448aa`  
@@ -73,7 +81,7 @@ The primary Phase 3 migration was previously applied to the Chef hosted project.
 
 ## Local verification evidence
 
-Executed after the Phase 3 hardening migration and dependency security patches:
+Re-run by Claude on 2026-11-08 at Codex's final state, committed unmodified as `e4f14ab`: typecheck pass, lint pass, `npm test` 27 passed / 1 credential-gated skip / 0 failed, Next.js 15.5.29 production build pass (16 routes), `npm audit` 0 vulnerabilities (prod and all), tracked-file secret scan clean. Earlier results:
 
 | Check | Result |
 |---|---|
@@ -126,10 +134,23 @@ The account allows two active Free projects. With explicit owner authorization f
 | 12:16:11 | — | `wavysites-web` **INACTIVE** |
 | ~12:18 | Resumed `the-chef-catering-crm` (`pqfyhkehbwikeaongcdo`) from the dashboard | `COMING_UP` (no account-limit refusal) |
 | 12:22:25 | — | Chef project **ACTIVE_HEALTHY** |
+| 14:38:57 | Paused `the-chef-catering-crm` from the dashboard (acceptance stopped cleanly; remaining work blocked on owner decisions) | `PAUSING` |
+| 14:39:57 | — | Chef project **INACTIVE** |
+| ~14:40 | Resumed `wavysites-web` from the dashboard | `COMING_UP` → `RESTORING` |
+| 14:44:31 | — | `wavysites-web` **ACTIVE_HEALTHY** |
+| 14:47:59 | Wavy Sites smoke test: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST — Claude (please delete)` stored (`form=project`, `status=new`, no spam flags) and its alert email sent on attempt 1 | PASS |
 
 No other project was touched. `wavy crm`, `wavy-rewards-staging`, `DayKare` and `Vertical Ops CRM` remain paused; `geos-ventures's Project` (separate client organization) remains active and untouched.
 
-**Current owner direction:** keep the Chef project running on the existing Free configuration and do not modify `wavysites-web` or `geos-ventures's Project`. No upgrade or project-state change was made during the continuation documented below.
+**Owner directions (two, recorded as given):**
+- Codex recorded "keep the Chef project running on the existing Free configuration and do not modify `wavysites-web` or `geos-ventures's Project`".
+- Claude was separately instructed: if the remaining hosted work cannot be completed because provider credentials or decisions are unavailable, stop cleanly, pause the Chef project, restore `wavysites-web`, confirm `ACTIVE_HEALTHY`, smoke-test the Wavy Sites lead form, and not leave Wavy Sites paused unnecessarily.
+
+Claude followed the second instruction at 14:38–14:48 (rows above), because D-1/D-2 fixes and provider credentials both await owner decisions.
+
+To continue hosted Phase 3 work, resume the Chef project. That needs a free slot: pause `wavysites-web` again, or approve a paid plan.
+
+Wavy Sites had no database from 12:16 to 14:44 local. `wavysites-web` holds 0 leads apart from the smoke test, so nothing was stored during the pause, and any `/start` submissions in that window failed.
 
 ### Migration state
 
@@ -249,7 +270,16 @@ The Phase 3 branch was CLI-deployed to a protected Vercel Preview. After the fin
 - Vercel Authentication remains enabled.
 - No production domain was changed or promoted.
 
-> **Alias restored 2026-11-08 ~13:50 local:** the owner's standing instruction is that the stable alias serves the verified public-launch build. It was moved back to `dpl_CpYLe299mnbvZiHSU79MFxZwyEAp` (`feat/chef-revenue-launch-2026-11-06` @ `3416408`). Phase 3 CRM acceptance now uses its **own** preview URLs: the deployment URL above, or the branch preview created when `feat/catering-crm-revenue-ops` is pushed. Do not point the stable alias at Phase 3 until the owner approves it.
+> **Stable alias timeline (true state):**
+>
+> | Time (local) | Target | By |
+> |---|---|---|
+> | 13:16 | `dpl_CpYLe299mnbvZiHSU79MFxZwyEAp`, launch branch `3416408`, owner-approved launch preview | Claude |
+> | 13:40 | `dpl_7eUiMmZJHUzieMcfoKbR7ktH7Vv9`, Phase 3 CLI build | Codex |
+> | 13:50 | back to `dpl_CpYLe299…`, per the owner's instruction to keep the launch preview | Claude |
+> | 14:05 | `dpl_6Wqq5yPmtX9NYzKPxEc96VvvY7Pe`, Phase 3 CLI build with the Stripe async changes | Codex |
+>
+> **Current state:** the alias serves Codex's Phase 3 build. The owner has asked that the approved launch preview (`dpl_CpYLe299…`) be preserved and that the alias not be replaced without explicit approval. Restoring it is therefore an **open owner decision**. Phase 3's own preview is the branch alias `the-chef-catering-crm-git-feat-catering-crm-re-33e01d-wavysites.vercel.app` (`dpl_DY7nJfFpczG7Zm9MnCE1uN1AN7Le` @ `e4f14ab`).
 
 The existing owner session persisted on the stable Preview origin. The following journey was exercised in the browser against hosted Supabase:
 
@@ -273,12 +303,75 @@ Before stopping at that boundary, Stripe hardening was aligned with current Chec
 
 **Acceptance cleanup:** a guarded transaction removed the synthetic client, lead, event, menus, tasks, quote/version/line item, agreement/version/evidence, proposal token/access events, financial ledger transaction, communications/outbox, scheduled actions, request/rate-limit rows, and acceptance audit rows. The post-check returned zero clients, leads, events, quotes, payments, communications, proposal tokens, scheduled actions, and outbox rows. The temporary proposal URL is therefore no longer usable.
 
+### Additional hosted UI acceptance: revisions, client responses, mobile/desktop (Claude, 14:17–14:42 local)
+
+Codex's run covered the core path but not quote revisions, decline, request-revision, or phone layout. These were run on the committed code (`e4f14ab`) against hosted Supabase.
+
+The owner's sign-in did not reach Supabase on the branch preview URL (`auth.users.last_sign_in_at` is still 2026-09-11). The journey therefore used the owner's existing session on the stable alias host, which serves Codex's Phase 3 build. The alias was **not** changed.
+
+Test data:
+- Lead `UI acceptance test (please ignore)`, created through the same `submit_catering_inquiry` RPC the public form uses.
+- 60 guests; Wings, Oxtail and Banana Pudding; `chef-ui-acceptance-20261108@example.invalid`.
+
+| Step | Result |
+|---|---|
+| Lead detail shows inquiry, dishes, queued acknowledgment, audit | PASS. Phase 3's lead page does not yet include the launch branch's improvements: dish list, location/dish summary, Clover deposit note. See integration note. |
+| Lead → event conversion | PASS: 6 default tasks, draft working menu revision 1, audit rows |
+| Quote creation from lead (quote #4 v1) | PASS. The event page's Quote section has no create button; the lead page does. |
+| Line item + settings | PASS, database-calculated: 60 × $25.00 → subtotal $1,500.00, 7% tax $105.00, 18% service $270.00, total **$1,875.00**, 50% deposit **$937.50** |
+| Lock and issue v1, email-queue checkbox off | PASS: one-time link warning shown, no email queued, quote follow-up scheduled as *Awaiting Approval* |
+| Client proposal page | PASS: correct totals/terms/expiry, internal-note marker **not** shown, `noindex, nofollow, nocache` |
+| Request revision **with** a message | **FAIL (D-2)**: page shows "This proposal could not be updated" (`?error=unavailable`) |
+| Request revision with an empty message | PASS: "Your response has been recorded"; CRM shows *Revision Requested* with Create revision / Revoke client link |
+| Create revision v2 + add dessert station | PASS: v2 draft copied v1. New totals: subtotal $1,650.00, tax $115.50, service $297.00, **$2,062.50**, deposit **$1,031.25** |
+| Lock and issue **v2** | **FAIL (D-1)**: "Could not save" (`?error=issue`). The decline and approve-after-revision steps could not run as a result. |
+| Revenue dashboard | PASS: renders; quoted/awaiting are $0 because v1 was revision-requested and v2 never issued; queued acknowledgment listed |
+| Communications / outbox | PASS: 6 rules all approval-required; quote follow-up *Awaiting Approval*; acknowledgment *Queued*. "Send queued emails" was not pressed. |
+| Mobile (390 px) and desktop | PASS: no horizontal overflow on `/crm`, lead, event, quote, revenue, communications or the proposal page; desktop quote page renders cleanly. The lead page has 3 small text links. |
+
+**Defect D-1: revisions cannot be issued.**
+- `public.prepare_and_issue_proposal` always runs `insert into public.agreements(event_id, …)`, but `agreements.event_id` is unique.
+- Every issue after the first one for an event therefore fails.
+- Reproduced in a rolled-back transaction: `23505 duplicate key value violates unique constraint`, with 1 existing agreement for the event.
+- Suggested fix (additive migration): reuse the event's agreement and insert the next `agreement_versions` row (version + 1), superseding the previous version and pointing `current_version_id` at the new one.
+
+**Defect D-2: a client message breaks revision requests and declines.**
+- `public.respond_to_proposal_by_token` appends the message to the issued version's `client_notes`.
+- `crm_private.prepare_quote_version` forbids any `client_notes` change on non-draft versions.
+- Reproduced: `P0001 Issued quote versions are immutable`.
+- Responses without a message succeed.
+- Suggested fix (additive migration): store the client's message in `crm_private.proposal_access_events` (new nullable column) or a dedicated responses table instead of mutating the issued version. Then show it to the operator on the quote page.
+
+**Smaller observations (non-blocking):**
+- The event readiness card still says "Deposit / payment: Not tracked in Phase 2".
+- The communications header says "Rules begin disabled" while all six are enabled.
+- The proposal page still shows Accept / Revise / Decline after a response has been recorded.
+- After `checkout.session.async_payment_failed`, the payment request stays `open` until the next checkout cancels it. This is safe, but it could be marked `cancelled` for clarity.
+- `APP_ORIGIN` is a single Preview value (the stable alias), so a proposal link generated on any other preview URL points at the stable alias host.
+
+**Cleanup (permanent, guarded):**
+- One transaction removed exactly the test client, lead, event, working menu, 6 tasks, quote #4, v1/v2, 3 line items, agreement and version, proposal token and access events, scheduled action, communication and outbox row, stored request, 3 rate-limit rows (`ip:`/`email:` seed keys and one `proposal:` key), and the related audit rows.
+- The post-check returned 0 for every CRM, revenue, proposal, scheduling, outbox, request and rate-limit table; 17 audit rows; 1 profile; 1 auth user; 0 Storage objects.
+- The quote-number identity is now at 4, so the next real quote will be #5.
+
+### Integration note: Phase 3 vs. the public-launch branch
+
+`feat/catering-crm-revenue-ops` (Phase 3) and `feat/chef-revenue-launch-2026-11-06` (public launch) have diverged:
+- The launch branch changed `app/crm/(protected)/leads/[id]/page.tsx`: dish list, location/dish summary, Clover deposit rule.
+- The launch branch changed the intake: `selected_menu_items`, `event_location`, folded `menu_notes`.
+
+Both run against the same hosted schema today. They must be merged and re-verified before either reaches `main`.
+
 ### Still required before HOSTED PASSED
 
 1. ~~Apply the hardening migration and re-run E1, E4 and F1–F4~~: **done** (2026-11-08, all pass).
-2. ~~Preview connection and real test inquiry~~: **done** (2026-11-08, see above).
-3. ~~Deploy and exercise Phase 3 quotes, secure proposals, electronic acceptance, the ledger, revenue dashboard, communications, and cleanup~~: **done** on the protected Preview.
-4. Stripe test mode, Resend and AI Gateway acceptance: provider credentials and owner decisions remain outstanding (sections below).
+2. ~~Preview connection and real test inquiry~~: **done** (2026-11-08).
+3. ~~Core provider-independent UI path~~: **done** (Codex run).
+4. **Fix D-1 and D-2** (additive migration + tests), apply with owner approval, then re-run: issue a revision, decline with a message, request revision with a message, and approve the latest revision to deposit-pending.
+5. **Stripe test mode**: PENDING owner configuration (test/restricted key + webhook secret in Preview only).
+6. **Resend**: PENDING owner configuration (Chef-owned sending domain, From/Reply-To, DNS). Also requires the Chef new-inquiry notification below.
+7. **AI Gateway**: PENDING (optional, draft-only, ≤ $5/month).
+8. Owner decision on the stable alias (see timeline above).
 
 ## Preview/provider configuration status
 
@@ -304,6 +397,11 @@ Required in Vercel Preview only:
 - `CRON_SECRET` (a new random server-only value)
 
 The owner must first provide the Chef-owned domain/subdomain and desired From/Reply-To addresses, then add the DNS records supplied by Resend. No acceptance message may be sent to a real customer.
+
+**Launch requirement (owner, 2026-11-08). All three must pass for Resend acceptance:**
+1. The customer receives the inquiry acknowledgment. Implemented: `inquiry_acknowledgment` is queued by the intake transaction.
+2. **Chef receives an immediate new-inquiry notification.** **NOT IMPLEMENTED:** the only templates are `inquiry_acknowledgment`, `catering_proposal` and the approval-gated lifecycle drafts. A Chef notification template, a recipient setting (owner address) and enqueueing in the intake transaction are still needed.
+3. No real customer receives a test email. Acceptance must use provider-designated test recipients or an owner-approved non-customer address; the outbox "Send queued emails" action must not be run while real inquiries are queued.
 
 ### Vercel AI Gateway
 
@@ -380,4 +478,16 @@ The unrelated `Claude outputs/` directory is outside the nested application and 
 
 ## Acceptance decision
 
-**Phase 3 is not yet fully accepted.** Local implementation, hosted Supabase, and provider-independent Preview acceptance are green. Work stops here at the required **Stripe TEST MODE** account/credential boundary. After Stripe passes, the next boundaries are Resend and then optional AI Gateway. Phase 4 has not begun.
+**Phase 3 is NOT HOSTED PASSED.**
+
+Green:
+- local verification at `e4f14ab`
+- hosted database acceptance
+- preview → Supabase intake
+- the core UI path
+
+Blocking:
+- **D-1** (revisions cannot be issued) and **D-2** (client messages break revise/decline).
+- Stripe test mode, Resend (including the missing Chef new-inquiry notification) and AI Gateway are **pending owner configuration**, not failed.
+
+Phase 4 has not begun. `main` and the production domain are untouched.
