@@ -14,6 +14,7 @@ import {
   taskPriorities,
   taskStatuses,
   type Venue,
+  money,
 } from "@/lib/crm/domain";
 import { calculateReadiness } from "@/lib/crm/readiness";
 import {
@@ -23,6 +24,8 @@ import {
   updateEvent,
   updateEventMenu,
   updateEventOperations,
+  recordManualPayment,
+  createStripeCheckout,
 } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
 import { EventReadiness } from "@/components/crm/EventReadiness";
@@ -36,7 +39,7 @@ export default async function EventDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; checkout?: string }>;
 }) {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
@@ -49,7 +52,7 @@ export default async function EventDetail({
   if (eventResult.error) throw new Error("Could not load event");
   if (!eventResult.data) notFound();
   const event = eventResult.data as CateringEvent;
-  const [venuesResult, menuResult, historyResult, tasksResult, docsResult] =
+  const [venuesResult, menuResult, historyResult, tasksResult, docsResult, financialResult, quoteResult] =
     await Promise.all([
       db.from("venues").select("*").order("name"),
       event.current_menu_id
@@ -74,13 +77,21 @@ export default async function EventDetail({
         .select("*")
         .eq("event_id", id)
         .order("created_at", { ascending: false }),
+      db
+        .from("event_financials")
+        .select("*,payment_transactions(*)")
+        .eq("event_id", id)
+        .maybeSingle(),
+      db.from("quotes").select("id,quote_number").eq("event_id", id).maybeSingle(),
     ]);
   if (
     venuesResult.error ||
     menuResult.error ||
     historyResult.error ||
     tasksResult.error ||
-    docsResult.error
+    docsResult.error ||
+    financialResult.error ||
+    quoteResult.error
   )
     throw new Error("Could not load event operations");
   const venues = venuesResult.data as Venue[];
@@ -89,13 +100,37 @@ export default async function EventDetail({
   const tasks = tasksResult.data as EventTask[];
   const documents = docsResult.data as EventDocument[];
   const readiness = calculateReadiness(event, menu, tasks, documents);
+  const financial = financialResult.data as null | {
+    id: string;
+    commercial_status: string;
+    gross_due_cents: number;
+    deposit_required_cents: number;
+    paid_cents: number;
+    refunded_cents: number;
+    balance_remaining_cents: number;
+    payment_transactions: Array<{
+      id: string;
+      transaction_type: string;
+      amount_cents: number;
+      source: string;
+      note: string;
+      occurred_at: string;
+    }>;
+  };
+  const eventQuote = quoteResult.data as null | { id: string; quote_number: number };
 
+  const pageState = await searchParams;
   return (
     <>
       <Link href="/crm/events">← Catering events</Link>
       <p className="crm-eyebrow">Event operations</p>
       <h1>{event.event_type}</h1>
-      <Notice {...(await searchParams)} />
+      <Notice {...pageState} />
+      {pageState.checkout && <div className="crm-notice" role="status">
+        <strong>Stripe test Checkout link created.</strong>
+        <p>Use only Stripe test card data during Phase 3 acceptance.</p>
+        <input readOnly value={pageState.checkout} aria-label="Stripe Checkout link" />
+      </div>}
       <p>
         <Link href={`/crm/clients/${event.client_id}`}>
           {event.clients.first_name} {event.clients.last_name}
@@ -104,6 +139,7 @@ export default async function EventDetail({
       </p>
       <nav className="crm-anchor-nav" aria-label="Event workspace">
         <a href="#overview">Overview</a>
+        <a href="#financials">Financials</a>
         <a href="#venue-coi">Venue & COI</a>
         <a href="#menu">Menu</a>
         <a href="#tasks">Tasks</a>
@@ -218,12 +254,60 @@ export default async function EventDetail({
                 : "Confirm final details"}
             </button>
           </form>
-          <h3>Deposit / payment</h3>
-          <p className="crm-muted">
-            Not tracked in Phase 2 and excluded from readiness.
-          </p>
+          <h3>Quote</h3>
+          {eventQuote ? <Link href={`/crm/quotes/${eventQuote.id}`}>Quote #{eventQuote.quote_number}</Link> : <p className="crm-muted">Create a quote from the original inquiry.</p>}
         </section>
       </div>
+
+      <section className="crm-panel" id="financials">
+        <p className="crm-eyebrow">Commercial record</p>
+        <h2>Deposit and payment ledger</h2>
+        {financial ? <>
+          <span className="crm-chip">{label(financial.commercial_status)}</span>
+          <div className="crm-kpis">
+            <div><p>Total</p><strong>{money(financial.gross_due_cents)}</strong></div>
+            <div><p>Deposit required</p><strong>{money(financial.deposit_required_cents)}</strong></div>
+            <div><p>Paid</p><strong>{money(financial.paid_cents)}</strong></div>
+            <div><p>Remaining</p><strong>{money(financial.balance_remaining_cents)}</strong></div>
+          </div>
+          <h3>Transactions</h3>
+          {financial.payment_transactions
+            .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
+            .map((transaction) => <div className="crm-record-row" key={transaction.id}>
+              <span><strong>{label(transaction.transaction_type)} · {label(transaction.source)}</strong><small>{transaction.note} · {new Date(transaction.occurred_at).toLocaleString()}</small></span>
+              <strong>{money(transaction.amount_cents)}</strong>
+            </div>)}
+          {!financial.payment_transactions.length && <p>No payments recorded.</p>}
+          <details>
+            <summary>Record a manual transaction</summary>
+            <form action={recordManualPayment}>
+              <input type="hidden" name="event_id" value={id} />
+              <input type="hidden" name="event_financial_id" value={financial.id} />
+              <label>Type<select name="transaction_type"><option value="payment">Payment received</option><option value="refund">Refund</option><option value="adjustment">Adjustment</option></select></label>
+              <label>Amount (USD)<input name="amount_dollars" inputMode="decimal" required /></label>
+              <label>Audit note<textarea name="note" minLength={3} maxLength={2000} required /></label>
+              <button>Record transaction</button>
+            </form>
+          </details>
+          <details>
+            <summary>Create Stripe test Checkout link</summary>
+            <p className="crm-muted">This remains disabled until Stripe test-mode server credentials are configured.</p>
+            <div className="crm-row-actions">
+              <form action={createStripeCheckout}>
+                <input type="hidden" name="event_id" value={id} />
+                <input type="hidden" name="event_financial_id" value={financial.id} />
+                <button name="purpose" value="deposit" className="crm-secondary">Create deposit link</button>
+              </form>
+              <form action={createStripeCheckout}>
+                <input type="hidden" name="event_id" value={id} />
+                <input type="hidden" name="event_financial_id" value={financial.id} />
+                <button name="purpose" value="balance" className="crm-secondary">Create balance link</button>
+              </form>
+            </div>
+          </details>
+          <p className="crm-muted">Manual entries are append-only. Corrections use a compensating transaction.</p>
+        </> : <p>Financials are created only after the client accepts a proposal and agreement.</p>}
+      </section>
 
       <section className="crm-panel" id="venue-coi">
         <p className="crm-eyebrow">Location and compliance</p>

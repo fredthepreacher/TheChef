@@ -260,6 +260,28 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+.crm-totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #ffffff15;
+  padding: 8px 0;
+}
+.crm-totals dd {
+  text-align: right;
+}
+.crm-prewrap,
+.crm-agreement {
+  white-space: pre-wrap;
+}
+.crm-agreement {
+  max-height: 480px;
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid #ffffff20;
+  border-radius: 7px;
+  background: #0c0d0e;
+}
 .crm-root ul {
   padding-left: 20px;
   margin-bottom: 20px;

@@ -154,6 +154,46 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
       );
     },
   );
+  await t.test("email outbox claims, retries and delivery webhooks are idempotent", async () => {
+    const claimed = (
+      await db.query<{ claim_email_outbox: Array<{ id: string; communication_id: string }> }>(
+        "select claim_email_outbox(1)",
+      )
+    ).rows[0].claim_email_outbox[0];
+    assert.ok(claimed.id);
+    await db.query("select complete_email_outbox($1,true,$2,null,null)", [
+      claimed.id,
+      "email_test_provider_id",
+    ]);
+    const eventId = `wh_${randomUUID()}`;
+    assert.equal(
+      (
+        await db.query<{ process_resend_webhook: boolean }>(
+          "select process_resend_webhook($1,'email.delivered',$2,$3)",
+          [eventId, "f".repeat(64), "email_test_provider_id"],
+        )
+      ).rows[0].process_resend_webhook,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query<{ process_resend_webhook: boolean }>(
+          "select process_resend_webhook($1,'email.delivered',$2,$3)",
+          [eventId, "f".repeat(64), "email_test_provider_id"],
+        )
+      ).rows[0].process_resend_webhook,
+      false,
+    );
+    assert.equal(
+      (
+        await db.query<{ status: string }>(
+          "select status from email_delivery_attempts where communication_id=$1",
+          [claimed.communication_id],
+        )
+      ).rows[0].status,
+      "delivered",
+    );
+  });
   await t.test(
     "anonymous cannot read clients or call privileged intake",
     async () => {
@@ -177,6 +217,17 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
         "tasks",
         "event_documents",
         "communications",
+        "quotes",
+        "quote_versions",
+        "quote_line_items",
+        "event_financials",
+        "payment_transactions",
+        "payment_requests",
+        "agreements",
+        "agreement_versions",
+        "email_delivery_attempts",
+        "automation_rules",
+        "ai_generations",
         "activity_log",
       ]) {
         assert.equal((await db.query(`select * from ${table}`)).rows.length, 0);
@@ -451,6 +502,242 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
             [task.id, document.id, replacement.id],
           )
         ).rows[0].count >= 4,
+      );
+    },
+  );
+  await t.test(
+    "quote totals, client acceptance, deposit gate and ledger are database enforced",
+    async () => {
+      await asRole("authenticated", owner);
+      const quote = (
+        await db.query<{ id: string }>(
+          "insert into quotes(client_id,lead_id,event_id,created_by) values($1,$2,$3,$4) returning id",
+          [lead.client_id, lead.id, eventId, owner],
+        )
+      ).rows[0];
+      const version = (
+        await db.query<{ id: string }>(
+          "insert into quote_versions(quote_id,version,tax_rate_bps,service_charge_rate_bps,delivery_fee_cents,deposit_type,deposit_value,expires_at,created_by) values($1,1,700,2000,5000,'percentage',2500,now()+interval '7 days',$2) returning id",
+          [quote.id, owner],
+        )
+      ).rows[0];
+      await db.query("update quotes set current_version_id=$1 where id=$2", [
+        version.id,
+        quote.id,
+      ]);
+      await db.query(
+        "insert into quote_line_items(quote_version_id,description,quantity_milli,unit_price_cents) values($1,'Dinner service',25000,2000)",
+        [version.id],
+      );
+      const totals = (
+        await db.query<{
+          subtotal_cents: number;
+          tax_cents: number;
+          service_charge_cents: number;
+          total_cents: number;
+          deposit_required_cents: number;
+        }>(
+          "select subtotal_cents,tax_cents,service_charge_cents,total_cents,deposit_required_cents from quote_versions where id=$1",
+          [version.id],
+        )
+      ).rows[0];
+      assert.deepEqual(totals, {
+        subtotal_cents: 50000,
+        tax_cents: 3500,
+        service_charge_cents: 10000,
+        total_cents: 68500,
+        deposit_required_cents: 17125,
+      });
+      await db.query(
+        "update quote_versions set total_cents=1,status='ready_for_review' where id=$1",
+        [version.id],
+      );
+      assert.equal(
+        (
+          await db.query<{ total_cents: number }>(
+            "select total_cents from quote_versions where id=$1",
+            [version.id],
+          )
+        ).rows[0].total_cents,
+        68500,
+      );
+      await assert.rejects(
+        db.query(
+          "update quote_line_items set unit_price_cents=1 where quote_version_id=$1",
+          [version.id],
+        ),
+        /immutable/,
+      );
+      const agreement = (
+        await db.query<{ id: string }>(
+          "insert into agreements(event_id,quote_id,created_by) values($1,$2,$3) returning id",
+          [eventId, quote.id, owner],
+        )
+      ).rows[0];
+      const agreementVersion = (
+        await db.query<{ id: string }>(
+          "insert into agreement_versions(agreement_id,quote_version_id,version,status,agreement_snapshot,content_sha256,created_by) values($1,$2,1,'sent',$3,$4,$5) returning id",
+          [
+            agreement.id,
+            version.id,
+            JSON.stringify({ terms: "Acceptance test terms" }),
+            "b".repeat(64),
+            owner,
+          ],
+        )
+      ).rows[0];
+      await db.query(
+        "update agreements set current_version_id=$1 where id=$2",
+        [agreementVersion.id, agreement.id],
+      );
+      const tokenHash = "a".repeat(64);
+      await db.query(
+        "select issue_proposal_access($1,$2,now()+interval '7 days')",
+        [version.id, tokenHash],
+      );
+      await assert.rejects(
+        db.query("update events set status='booked' where id=$1", [eventId]),
+        /deposit has not been recorded/,
+      );
+      await asRole("service_role");
+      const proposal = (
+        await db.query<{ get_proposal_by_token: { total_cents: number } }>(
+            "select get_proposal_by_token($1,$2)",
+            [tokenHash, "e".repeat(64)],
+        )
+      ).rows[0].get_proposal_by_token;
+      assert.equal(proposal.total_cents, 68500);
+      assert.equal("internal_notes" in proposal, false);
+      assert.equal("proposal_token_id" in proposal, false);
+      await db.query(
+        "select accept_proposal_by_token($1,'Test Client','I agree to the catering service agreement.',$2,'Test browser')",
+        [tokenHash, "c".repeat(64)],
+      );
+      await asRole("authenticated", owner);
+      assert.equal(
+        (
+          await db.query<{ commercial_status: string }>(
+            "select commercial_status from event_financials where event_id=$1",
+            [eventId],
+          )
+        ).rows[0].commercial_status,
+        "approved_deposit_pending",
+      );
+      await assert.rejects(
+        db.query("update events set status='booked' where id=$1", [eventId]),
+        /deposit has not been recorded/,
+      );
+      const financial = (
+        await db.query<{ id: string }>(
+          "select id from event_financials where event_id=$1",
+          [eventId],
+        )
+      ).rows[0];
+      await assert.rejects(
+        db.query(
+          "insert into payment_transactions(event_financial_id,transaction_type,source,amount_cents,idempotency_key,recorded_by,note) values($1,'payment','manual',17125,$2,$3,'Forged operator')",
+          [financial.id, randomUUID(), manager],
+        ),
+        /current CRM operator/,
+      );
+      await db.query(
+        "insert into payment_transactions(event_financial_id,transaction_type,source,amount_cents,idempotency_key,recorded_by,note) values($1,'payment','manual',17125,$2,$3,'Acceptance deposit')",
+        [financial.id, randomUUID(), owner],
+      );
+      assert.equal(
+        (
+          await db.query<{ commercial_status: string }>(
+            "select commercial_status from event_financials where id=$1",
+            [financial.id],
+          )
+        ).rows[0].commercial_status,
+        "booked",
+      );
+      await db.query("update events set status='booked' where id=$1", [eventId]);
+      const bookingActions = (
+        await db.query<{ list_scheduled_actions: Array<{ name: string; status: string }> }>(
+          "select list_scheduled_actions()",
+        )
+      ).rows[0].list_scheduled_actions;
+      assert.equal(
+        bookingActions.some((action) => action.name === "Upcoming event reminder" && action.status === "awaiting_approval"),
+        true,
+      );
+      const stripeSession = `cs_test_${randomUUID()}`;
+      await db.query(
+        "select create_stripe_payment_request($1,'balance',$2,'https://checkout.stripe.test/session',now()+interval '1 day')",
+        [financial.id, stripeSession],
+      );
+      await asRole("service_role");
+      const stripeEvent = `evt_${randomUUID()}`;
+      await assert.rejects(
+        db.query(
+          "select process_stripe_checkout_event($1,'checkout.session.completed',$2,$3,$4,true,$5,'usd')",
+          [`evt_${randomUUID()}`, "d".repeat(64), stripeSession, `pi_${randomUUID()}`, 1],
+        ),
+        /amount mismatch/,
+      );
+      const firstDelivery = await db.query<{ process_stripe_checkout_event: boolean }>(
+        "select process_stripe_checkout_event($1,'checkout.session.completed',$2,$3,$4,true,$5,'usd')",
+        [stripeEvent, "d".repeat(64), stripeSession, `pi_${randomUUID()}`, 51375],
+      );
+      assert.equal(firstDelivery.rows[0].process_stripe_checkout_event, true);
+      const duplicateDelivery = await db.query<{ process_stripe_checkout_event: boolean }>(
+        "select process_stripe_checkout_event($1,'checkout.session.completed',$2,$3,$4,true,$5,'usd')",
+        [stripeEvent, "d".repeat(64), stripeSession, `pi_${randomUUID()}`, 51375],
+      );
+      assert.equal(duplicateDelivery.rows[0].process_stripe_checkout_event, false);
+      await asRole("authenticated", owner);
+      assert.equal(
+        (
+          await db.query<{ commercial_status: string; balance_remaining_cents: number }>(
+            "select commercial_status,balance_remaining_cents from event_financials where id=$1",
+            [financial.id],
+          )
+        ).rows[0].commercial_status,
+        "paid",
+      );
+      await db.query(
+        "insert into automation_rules(name,trigger_key,action_key,delay_minutes,requires_operator_approval,active,created_by) values('Acceptance immediate thank-you','event_completed','draft_thank_you',0,true,true,$1)",
+        [owner],
+      );
+      await db.query("update events set status='completed' where id=$1", [eventId]);
+      const scheduled = (
+        await db.query<{ list_scheduled_actions: Array<{ id: string; name: string; status: string }> }>(
+          "select list_scheduled_actions()",
+        )
+      ).rows[0].list_scheduled_actions;
+      const thankYou = scheduled.find((action) => action.name === "Acceptance immediate thank-you");
+      assert.equal(thankYou?.status, "awaiting_approval");
+      await db.query("select approve_scheduled_action($1,true)", [thankYou?.id]);
+      await asRole("service_role");
+      assert.equal(
+        (
+          await db.query<{ process_due_scheduled_actions: number }>(
+            "select process_due_scheduled_actions(10)",
+          )
+        ).rows[0].process_due_scheduled_actions,
+        1,
+      );
+      assert.equal(
+        (
+          await db.query<{ count: number }>(
+            "select count(*)::int as count from crm_private.email_outbox where template_key='draft_thank_you'",
+          )
+        ).rows[0].count,
+        1,
+      );
+      await asRole("authenticated", owner);
+      await assert.rejects(
+        db.query("update payment_transactions set amount_cents=1"),
+        /permission denied/,
+      );
+      await assert.rejects(
+        db.query(
+          "update agreement_versions set accepted_typed_name='Changed' where id=$1",
+          [agreementVersion.id],
+        ),
+        /immutable/,
       );
     },
   );
