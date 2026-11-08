@@ -20,7 +20,12 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
-  if (!["checkout.session.completed", "checkout.session.expired"].includes(event.type))
+  if (![
+    "checkout.session.completed",
+    "checkout.session.async_payment_succeeded",
+    "checkout.session.async_payment_failed",
+    "checkout.session.expired",
+  ].includes(event.type))
     return NextResponse.json({ received: true });
   const session = event.data.object as Stripe.Checkout.Session;
   const db = serviceClient();

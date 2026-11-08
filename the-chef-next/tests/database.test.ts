@@ -677,6 +677,11 @@ test("migration, atomic intake, RLS, snapshots, audit and private storage", asyn
         ),
         /amount mismatch/,
       );
+      const failedAsyncDelivery = await db.query<{ process_stripe_checkout_event: boolean }>(
+        "select process_stripe_checkout_event($1,'checkout.session.async_payment_failed',$2,$3,null,false,$4,'usd')",
+        [`evt_${randomUUID()}`, "d".repeat(64), stripeSession, 51375],
+      );
+      assert.equal(failedAsyncDelivery.rows[0].process_stripe_checkout_event, true);
       const firstDelivery = await db.query<{ process_stripe_checkout_event: boolean }>(
         "select process_stripe_checkout_event($1,'checkout.session.completed',$2,$3,$4,true,$5,'usd')",
         [stripeEvent, "d".repeat(64), stripeSession, `pi_${randomUUID()}`, 51375],

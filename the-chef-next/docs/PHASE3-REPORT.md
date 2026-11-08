@@ -26,8 +26,9 @@ Phase 3 is represented by:
 - `20260911210739_catering_revenue_operations.sql` — primary revenue model and workflows.
 - `20261108165321_phase3_revenue_hardening.sql` — additive corrections for Stripe amount/currency verification, authenticated manual-payment attribution, approval-gated lifecycle defaults, and upcoming-event reminders.
 - `20261108183134_phase3_fk_indexes.sql` — additive indexes for all 15 Phase 3 foreign-key columns identified by the hosted performance advisor.
+- `20261108191500_stripe_async_checkout_events.sql` — additive support for delayed-payment Checkout success/failure webhooks while retaining the existing signature, amount, currency, unknown-session, and duplicate-event gates.
 
-The primary Phase 3 migration was previously applied to the Chef hosted project. It has not been edited in place since that hosted application. The hardening migration passed the local migration suite and was **applied to hosted on 2026-11-08 at 17:36:40 UTC**, after a dry-run confirmed it was the only pending migration and the owner explicitly approved the push. A later dry-run showed only the new foreign-key-index migration; it was applied alone, and local/remote history now matches across all six canonical versions.
+The primary Phase 3 migration was previously applied to the Chef hosted project. It has not been edited in place since that hosted application. The hardening migration passed the local migration suite and was **applied to hosted on 2026-11-08 at 17:36:40 UTC**, after a dry-run confirmed it was the only pending migration and the owner explicitly approved the push. Later dry-runs showed only the new foreign-key-index migration and then only the Stripe asynchronous-event migration; each was applied alone. Local/remote history now matches across all seven canonical versions.
 
 ## Fully implemented and locally tested
 
@@ -241,7 +242,7 @@ The only residue is that the `quotes.quote_number` identity advanced by two (`la
 
 ### Hosted Phase 3 UI acceptance — provider-independent
 
-The Phase 3 branch was CLI-deployed to a protected Vercel Preview, deployment `dpl_7eUiMmZJHUzieMcfoKbR7ktH7Vv9` (`the-chef-catering-lr6kyggk0-wavysites.vercel.app`, 2026-11-08 13:39 local). The stable **Preview-only** alias was then temporarily moved to it:
+The Phase 3 branch was CLI-deployed to a protected Vercel Preview. After the final Stripe event hardening, the stable **Preview-only** alias was moved to deployment `dpl_6Wqq5yPmtX9NYzKPxEc96VvvY7Pe` (`the-chef-catering-j1adlnzr2-wavysites.vercel.app`):
 
 - `https://the-chef-catering-crm-preview.vercel.app`
 - `target=preview`; `productionUrl=null`
@@ -268,6 +269,8 @@ The existing owner session persisted on the stable Preview origin. The following
 
 No Stripe, Resend, or AI credential was used. The Checkout control remains at its explicit provider boundary.
 
+Before stopping at that boundary, Stripe hardening was aligned with current Checkout guidance: the server accepts either a test secret key or a least-privilege restricted test key; the webhook route recognizes `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, and `checkout.session.expired`; and hosted execution of the database processor remains service-role-only. A protected-Preview POST without `Stripe-Signature` returned the safe `Missing signature` rejection.
+
 **Acceptance cleanup:** a guarded transaction removed the synthetic client, lead, event, menus, tasks, quote/version/line item, agreement/version/evidence, proposal token/access events, financial ledger transaction, communications/outbox, scheduled actions, request/rate-limit rows, and acceptance audit rows. The post-check returned zero clients, leads, events, quotes, payments, communications, proposal tokens, scheduled actions, and outbox rows. The temporary proposal URL is therefore no longer usable.
 
 ### Still required before HOSTED PASSED
@@ -285,10 +288,10 @@ Vercel project `wavysites/the-chef-catering-crm` has the Phase 1.5 Supabase, int
 
 Required in Vercel Preview only:
 
-- `STRIPE_SECRET_KEY` — must start with `sk_test_`.
-- `STRIPE_WEBHOOK_SECRET` — signing secret for `https://<preview-host>/api/stripe/webhook`.
+- `STRIPE_SECRET_KEY` — a least-privilege `rk_test_` key is preferred; an `sk_test_` key is also accepted. Never use a live key.
+- `STRIPE_WEBHOOK_SECRET` — signing secret for `https://the-chef-catering-crm-preview.vercel.app/api/stripe/webhook`.
 
-Create the webhook for `checkout.session.completed` and `checkout.session.expired`. Do not configure live keys, create live charges, or add a custom Checkout domain.
+Create the test/sandbox webhook for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, and `checkout.session.expired`. Do not configure live keys, create live charges, or add a custom Checkout domain.
 
 ### Resend Free
 
@@ -370,6 +373,7 @@ The provider-independent hosted work is complete. The following provider-backed 
 - `supabase/migrations/20260911210739_catering_revenue_operations.sql`
 - `supabase/migrations/20261108165321_phase3_revenue_hardening.sql`
 - `supabase/migrations/20261108183134_phase3_fk_indexes.sql`
+- `supabase/migrations/20261108191500_stripe_async_checkout_events.sql`
 - `tests/database.test.ts`
 
 The unrelated `Claude outputs/` directory is outside the nested application and was not modified.

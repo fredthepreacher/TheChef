@@ -11,7 +11,7 @@ export class StripeNotConfiguredError extends Error {
 export function stripeClient() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new StripeNotConfiguredError();
-  if (!key.startsWith("sk_test_"))
+  if (!key.startsWith("sk_test_") && !key.startsWith("rk_test_"))
     throw new Error("Phase 3 accepts Stripe test-mode keys only.");
   return new Stripe(key);
 }
