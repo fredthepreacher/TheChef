@@ -163,7 +163,7 @@ body  {
   white-space: nowrap;
 }
 .caterer-nav .nav-logo { color: var(--gold-light); font-family: 'Cinzel', serif; }
-.rapper-nav  .nav-logo { color: var(--ember-glow);  font-family: 'Bebas Neue', sans-serif; letter-spacing: .08em; font-size: 15px; }
+.rapper-nav  .nav-logo { color: var(--ember-glow);  font-family: var(--font-artist); letter-spacing: .08em; font-size: 15px; }
 
 .nav-link {
   color: rgba(255,255,255,.70);
@@ -214,7 +214,7 @@ body  {
   color: #fff;
 }
 .rapper-content .hero-name {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-artist);
   font-size: clamp(72px, 10vw, 145px);
   letter-spacing: .01em;
   color: #fff;
@@ -314,7 +314,7 @@ body  {
 
 .caterer-label .split-label-name { font-family: 'Cinzel', serif;       color: var(--gold-light); text-shadow: 0 4px 20px rgba(201,168,76,.25); }
 .rapper-label                     { text-align: right; }
-.rapper-label  .split-label-name  { font-family: 'Bebas Neue', sans-serif; color: var(--ember-glow); letter-spacing: .10em; text-shadow: 0 4px 20px rgba(255,80,20,.30); }
+.rapper-label  .split-label-name  { font-family: var(--font-artist); color: var(--ember-glow); letter-spacing: .10em; text-shadow: 0 4px 20px rgba(255,80,20,.30); }
 
 /* ─── DRAG HANDLE ─── */
 .handle {
@@ -529,7 +529,7 @@ body.locked-rapper .rapper  .page-sections { opacity: 1; }
   letter-spacing: -.02em;
 }
 .caterer .section-title { font-family: 'Cormorant Garamond', serif; }
-.rapper  .section-title { font-family: 'Bebas Neue', sans-serif; letter-spacing: .02em; font-weight: 400; }
+.rapper  .section-title { font-family: var(--font-artist); letter-spacing: .02em; font-weight: 400; }
 
 .section-body {
   font-size: 16px;
@@ -573,7 +573,7 @@ body.locked-rapper .rapper  .page-sections { opacity: 1; }
   letter-spacing: -.02em;
 }
 .caterer .stat-num { color: var(--gold-light); font-family: 'Cormorant Garamond', serif; font-weight: 600; }
-.rapper  .stat-num { color: var(--ember-glow); font-family: 'Bebas Neue', sans-serif; font-size: 44px; }
+.rapper  .stat-num { color: var(--ember-glow); font-family: var(--font-artist); font-size: 44px; }
 .stat-label { font-size: 11px; color: rgba(255,255,255,.45); letter-spacing: .10em; text-transform: uppercase; }
 
 /* ─── MENU SECTION ─── */
@@ -662,7 +662,7 @@ body.locked-rapper .rapper  .page-sections { opacity: 1; }
   opacity: .55;
 }
 .track-num   { font-size: 11px; color: rgba(255,80,20,.55); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 12px; }
-.track-title { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: .04em; color: #fff; margin-bottom: 8px; }
+.track-title { font-family: var(--font-artist); font-size: 26px; letter-spacing: .04em; color: #fff; margin-bottom: 8px; }
 .track-meta  { font-size: 12px; color: rgba(255,255,255,.40); letter-spacing: .08em; }
 .track-play  { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ember-glow); }
 .track-play svg { width: 16px; height: 16px; fill: currentColor; }
@@ -679,7 +679,7 @@ body.locked-rapper .rapper  .page-sections { opacity: 1; }
   transition: background .2s;
 }
 .show-row:hover { background: rgba(255,255,255,.02); margin: 0 -20px; padding-left: 20px; padding-right: 20px; border-radius: 12px; }
-.show-date      { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: .04em; color: var(--ember-glow); line-height: 1; }
+.show-date      { font-family: var(--font-artist); font-size: 22px; letter-spacing: .04em; color: var(--ember-glow); line-height: 1; }
 .show-date span { display: block; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: rgba(255,255,255,.35); letter-spacing: .10em; text-transform: uppercase; margin-top: 3px; }
 .show-venue     { font-size: 17px; font-weight: 500; color: #fff; margin-bottom: 4px; }
 .show-city      { font-size: 13px; color: rgba(255,255,255,.45); letter-spacing: .06em; }
@@ -716,7 +716,7 @@ body.locked-rapper .rapper  .page-sections { opacity: 1; }
 .footer-brand { display: inline-flex; align-items: center; gap: 12px; }
 .footer-logo-mark { height: 44px; width: 44px; display: block; mix-blend-mode: screen; opacity: .9; }
 .caterer .footer-logo { font-family: 'Cinzel', serif;         color: rgba(201,168,76,.50); }
-.rapper  .footer-logo { font-family: 'Bebas Neue', sans-serif; color: rgba(255,80,20,.45); letter-spacing: .08em; font-size: 17px; }
+.rapper  .footer-logo { font-family: var(--font-artist); color: rgba(255,80,20,.45); letter-spacing: .08em; font-size: 17px; }
 
 /* ================================================================
    RESPONSIVE
@@ -1786,7 +1786,7 @@ body.reviews-page {
     linear-gradient(160deg, #160408 0%, #08040a 100%);
 }
 .album-cover-fallback span {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-artist);
   font-size: 34px;
   letter-spacing: 0.12em;
   color: var(--ember-glow);
@@ -1802,7 +1802,7 @@ body.reviews-page {
   margin-bottom: 14px;
 }
 .album-title {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-artist);
   font-size: clamp(34px, 4.5vw, 58px);
   letter-spacing: 0.02em;
   line-height: 1;
@@ -1887,7 +1887,7 @@ body.reviews-page {
     linear-gradient(160deg, #160408 0%, #08040a 100%);
 }
 .mtrack-cover-fallback span {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-artist);
   font-size: 72px;
   color: var(--ember-glow);
   opacity: 0.85;
@@ -1912,7 +1912,7 @@ body.reviews-page {
 
 .mtrack-info { padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 4px; }
 .mtrack-title {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-artist);
   font-size: 27px;
   letter-spacing: 0.04em;
   color: #fff;

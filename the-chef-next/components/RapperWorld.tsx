@@ -148,7 +148,7 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
             <p className="section-tag" style={{ textAlign: "center" }}>Booking &amp; Features</p>
             <h2
               className="section-title"
-              style={{ fontFamily: "'Bebas Neue',sans-serif", fontWeight: 400, letterSpacing: ".02em", textAlign: "center" }}
+              style={{ fontFamily: "var(--font-artist)", fontWeight: 700, letterSpacing: "-.01em", textAlign: "center" }}
             >
               Book The Entertainer
             </h2>

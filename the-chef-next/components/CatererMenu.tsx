@@ -61,7 +61,7 @@ export default function CatererMenu() {
   return (
     <section className="section lux-menu-section" id="caterer-menu">
       {/* SECTION HERO */}
-      <div className="lux-menu-hero">
+      <div className="lux-menu-hero" data-reveal="">
         <p className="section-tag">Curated Culinary Experiences</p>
         <h2 className="lux-menu-heading">The Signature Menu</h2>
         <div className="lux-menu-rule"><span></span><span className="lux-menu-rule-icon">✦</span><span></span></div>
@@ -73,13 +73,22 @@ export default function CatererMenu() {
 
       {/* CATEGORY CARDS */}
       <div className="lux-cat-grid">
-        {menuCategories.map((cat) => {
+        {menuCategories.map((cat, ci) => {
           const isOpen = openId === cat.id;
           const count = cat.columns ? cat.columns.flat().filter((i) => selected.includes(itemKey(cat.title, i.name))).length : 0;
           return (
-            <div className={`lux-cat-card${isOpen ? " expanded" : ""}`} data-menu={cat.id} key={cat.id}>
+            <div
+              className={`lux-cat-card${isOpen ? " expanded" : ""}`}
+              data-menu={cat.id}
+              key={cat.id}
+              data-reveal=""
+              style={{ "--reveal-delay": `${(ci % 3) * 90}ms` } as React.CSSProperties}
+            >
+              <div className="lux-cat-media">
+                <img src={cat.image.src} alt={cat.image.alt} width={760} height={506} loading="lazy" decoding="async" />
+                <div className="lux-cat-icon" aria-hidden="true">{icons[cat.id]}</div>
+              </div>
               <div className="lux-cat-inner">
-                <div className="lux-cat-icon">{icons[cat.id]}</div>
                 <h3 className="lux-cat-title">
                   {cat.title}
                   {count > 0 && <span className="lux-cat-count" aria-label={`${count} selected`}>{count}</span>}
@@ -150,7 +159,7 @@ export default function CatererMenu() {
       </div>
 
       {/* YOUR EVENT MENU — selection summary → Build My Event */}
-      <div className="event-menu-summary" id="caterer-build" aria-live="polite">
+      <div className="event-menu-summary" id="caterer-build" aria-live="polite" data-reveal="">
         <div className="event-menu-summary-head">
           <p className="section-tag">Build My Event</p>
           <h3 className="lux-docs-title">

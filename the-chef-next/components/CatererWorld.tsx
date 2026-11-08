@@ -7,12 +7,13 @@ import ReviewsPreview from "./ReviewsPreview";
 import BookingCTA from "./BookingCTA";
 import CateringHeroVideo from "./CateringHeroVideo";
 import CurrentYear from "./CurrentYear";
+import RevealController from "./RevealController";
 import { ServiceLanes, HowItWorks, CateringFAQ, FinalCTA } from "./catering/CateringSections";
 
 /**
  * The caterer side of the split-screen — luxury catering brand world.
  * Conversion order: hero → choose what you need → menu (select dishes) →
- * how it works → story → reviews → Book The Chef → FAQ → final CTA.
+ * Book The Chef → how it works → story → reviews → FAQ → final CTA.
  */
 export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
   return (
@@ -66,6 +67,10 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
         {/* LUXURY MENU — selectable dishes → Your Event Menu → Build My Event */}
         <CatererMenu />
 
+        {/* BOOK THE CHEF — moved up: right after guests have browsed the menu,
+            with the guest endorsement video as social proof (client feedback). */}
+        <BookingCTA />
+
         {/* HOW IT WORKS */}
         <HowItWorks />
 
@@ -75,7 +80,7 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
           <h2 className="section-title">
             More Than a Meal.<br />It&apos;s an Experience.
           </h2>
-          <div className="about-grid">
+          <div className="about-grid" data-reveal="">
             <div className="about-text">
               <p>
                 The Chef brings bold flavors, refined technique, and genuine passion to every plate. From intimate
@@ -116,14 +121,14 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
         {/* REVIEWS PREVIEW (+ optional video testimonial) */}
         <ReviewsPreview />
 
-        {/* BOOK THE CHEF (+ optional endorsement video) */}
-        <BookingCTA />
-
         {/* FAQ — owner-safe process facts only */}
         <CateringFAQ />
 
         {/* FINAL CTA */}
         <FinalCTA />
+
+        {/* Scroll-reveal motion for [data-reveal] blocks (off for reduced motion) */}
+        <RevealController rootId="catererWorld" />
 
         <footer className="site-footer">
           <span className="footer-brand">

@@ -7,11 +7,13 @@
 
 export type LoopVideo = { src: string; poster: string };
 
-/** Entertainer hero performance loop — IMG_3725.MOV 2.0–12.8s, 10s seamless
- *  crossfade loop, 576×1024 H.264, no audio track (0.42 MB from 59.8 MB). */
+/** Entertainer hero loop — 65A1C3BB.MOV (full-length studio shot of Chef in
+ *  the blue suit; replaces the tighter IMG_3725 crop per client feedback).
+ *  0.3–12.9s → 11.8s seamless crossfade loop, dark ember grade + vignette
+ *  baked in, 576×1024 H.264, no audio track (0.27 MB from 11.4 MB). */
 export const ENTERTAINER_HERO: LoopVideo | null = {
-  src: "/assets/video/entertainer-hero.mp4",
-  poster: "/assets/video/entertainer-hero-poster.jpg",
+  src: "/assets/video/entertainer-hero-studio.mp4",
+  poster: "/assets/video/entertainer-hero-studio-poster.jpg",
 };
 
 export type EndorsementVideo = {
@@ -26,12 +28,14 @@ export type EndorsementVideo = {
   height: number;
 };
 
-/** IMG_0068.MOV — guest at an event: "…please book The Chef…" (Book section). */
+/** IMG_0068.MOV — guest at an event: "…please book The Chef's catering
+ *  services." Trimmed at 8.45s (before the end-of-clip "Hey!" + noise burst)
+ *  with a 0.47s audio fade-out and a short video fade (Book section). */
 export const BOOK_THE_CHEF_VIDEO: EndorsementVideo | null = {
   id: "book-the-chef",
   src: "/assets/video/book-the-chef-endorsement.mp4",
   poster: "/assets/video/book-the-chef-endorsement-poster.jpg",
-  caption: "Book The Chef · Tap to play",
+  caption: "“…please book The Chef.” — event guest",
   label: "Video: a guest at a Chef Frankie event recommends booking The Chef",
   width: 540,
   height: 960,

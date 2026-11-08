@@ -193,11 +193,17 @@ export default function SplitStage() {
       <div className="center-labels" id="centerLabels">
         <div className="split-label caterer-label">
           <span className="split-label-tag">← Swipe Right</span>
-          <span className="split-label-name">The Chef Catering</span>
+          <span className="split-label-name">
+            <span className="split-kicker">The Chef</span>
+            <span className="split-word">Catering</span>
+          </span>
         </div>
         <div className="split-label rapper-label">
           <span className="split-label-tag">Swipe Left →</span>
-          <span className="split-label-name">The Chef — Entertainer</span>
+          <span className="split-label-name">
+            <span className="split-kicker">The Chef</span>
+            <span className="split-word">Entertainer</span>
+          </span>
         </div>
       </div>
 

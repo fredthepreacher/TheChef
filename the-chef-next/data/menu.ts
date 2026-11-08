@@ -4,6 +4,8 @@ export type MenuCategory = {
   id: string;
   title: string;
   description: string;
+  /** Real photo of Chef Frankie's food for the category card (public/assets/menu). */
+  image: { src: string; alt: string };
   /** Two columns of items, matching the original drawer layout. Empty for the custom card. */
   columns: [MenuItem[], MenuItem[]] | null;
 };
@@ -19,6 +21,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "appetizers",
     title: "Appetizers",
+    image: { src: "/assets/menu/appetizers.webp", alt: "Baked potato rounds with fresh herbs on a serving tray" },
     description:
       "Handcrafted starters that set the tone — charcuterie boards, shrimp cocktail, caprese bites, wings, egg rolls, and more.",
     columns: [
@@ -45,6 +48,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "mains",
     title: "Main Course",
+    image: { src: "/assets/menu/mains.webp", alt: "Plated lamb chops with lobster tail, asparagus and mashed potatoes" },
     description:
       "Premium entrées from roasted chicken and jerk to baby back ribs, oxtail, beef brisket, lamb chops, and steak.",
     columns: [
@@ -68,6 +72,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "seafood",
     title: "Seafood",
+    image: { src: "/assets/menu/seafood.webp", alt: "Seafood boil with crab legs, shrimp and herbs" },
     description:
       "Lobster tail, salmon, shrimp linguini, seafood boils — every piece sourced fresh and prepared to perfection.",
     columns: [
@@ -86,6 +91,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "sides",
     title: "Sides & Bread",
+    image: { src: "/assets/menu/sides.webp", alt: "Caramelized plantains on a serving tray" },
     description:
       "Baked mac & cheese, collard greens, candied yams, rice and peas, pasta salad, cornbread — soul food elevated.",
     columns: [
@@ -114,6 +120,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "desserts",
     title: "Desserts",
+    image: { src: "/assets/menu/desserts.webp", alt: "Dessert board with pastries, muffins and chocolate-dipped strawberries" },
     description:
       "Cakes, pies, banana pudding, brownies, fruit platters, and chocolate-dipped strawberries for a sweet finish.",
     columns: [
@@ -134,6 +141,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "custom",
     title: "Custom Menus",
+    image: { src: "/assets/menu/custom.webp", alt: "Full catering spread in chafing dishes set up in a client's kitchen" },
     description:
       "Don't see what you need? Chef builds fully custom menus for weddings, corporate events, holidays, and meal prep.",
     columns: null,

@@ -15,14 +15,14 @@ export default function ReviewsPreview() {
 
       {/* Video testimonial — its own card, never mixed into the written quotes */}
       {REVIEW_VIDEO && (
-        <div className="review-video-row">
+        <div className="review-video-row" data-reveal="">
           <EndorsementVideo clip={REVIEW_VIDEO} />
         </div>
       )}
 
       <div className="reviews-grid">
-        {homeReviews.map((r) => (
-          <div className="review-card" key={r.name}>
+        {homeReviews.map((r, i) => (
+          <div className="review-card" key={r.name} data-reveal="" style={{ "--reveal-delay": `${i * 100}ms` } as React.CSSProperties}>
             <div className="review-stars">★★★★★</div>
             <p className="review-text">
               {r.quote.map((seg, i) =>

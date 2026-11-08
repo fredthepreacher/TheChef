@@ -1,0 +1,484 @@
+/* ================================================================
+   VISUAL REFINEMENT PASS (Nov 8, 2026) — client feedback
+   Typography lockups · real-food menu cards · motion · video player.
+   Loaded last (after globals.css + launch.css). The split mechanics,
+   approved catering hero panel and black/gold palette are untouched.
+   ================================================================ */
+
+:root {
+  --font-artist: 'Syne', 'DM Sans', system-ui, sans-serif;
+  --ease-lux: cubic-bezier(.22, .61, .36, 1);
+  --gold-sheen: linear-gradient(100deg, #9a7429 0%, #e9c770 20%, #fff4d2 36%, #f0d080 50%, #b8913b 68%, #f6dc94 86%, #c9a84c 100%);
+  --ember-sheen: linear-gradient(100deg, #ff6a2c 0%, #ffb88e 22%, #fff0e6 36%, #ff8a4c 52%, #ff5520 72%, #ffa070 100%);
+}
+
+@keyframes chefSheen {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   1. SPLIT LABELS — two-tier lockups
+   ──────────────────────────────────────────────────────────────── */
+.split-label-name {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  text-shadow: none !important;
+  line-height: 1;
+}
+.rapper-label .split-label-name { align-items: flex-end; }
+
+.split-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: clamp(10px, .85vw, 12.5px);
+  font-weight: 600;
+  letter-spacing: .5em;
+  text-transform: uppercase;
+}
+.split-kicker::after { content: ""; width: 38px; height: 1px; }
+.caterer-label .split-kicker { color: rgba(240, 208, 128, .88); }
+.caterer-label .split-kicker::after { background: linear-gradient(90deg, var(--gold), transparent); }
+.rapper-label .split-kicker { color: rgba(255, 138, 76, .92); flex-direction: row-reverse; margin-right: -.5em; }
+.rapper-label .split-kicker::after { background: linear-gradient(270deg, var(--ember), transparent); }
+
+.split-word {
+  display: block;
+  line-height: 1.02;
+  padding: .04em 0;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  background-size: 260% 100%;
+}
+.caterer-label .split-word {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: clamp(30px, 4.3vw, 66px);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background-image: var(--gold-sheen);
+  -webkit-text-stroke: .5px rgba(255, 240, 200, .3);
+  filter: drop-shadow(0 0 22px rgba(240, 208, 128, .30)) drop-shadow(0 2px 2px rgba(0, 0, 0, .55));
+  animation: chefSheen 9s var(--ease-lux) infinite alternate;
+}
+.rapper-label .split-word {
+  font-family: var(--font-artist);
+  font-weight: 800;
+  font-size: clamp(28px, 4vw, 62px);
+  letter-spacing: -.025em;
+  background-image: var(--ember-sheen);
+  filter: drop-shadow(0 0 26px rgba(255, 85, 32, .40)) drop-shadow(0 2px 2px rgba(0, 0, 0, .55));
+  animation: chefSheen 9s var(--ease-lux) infinite alternate-reverse;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   2. HERO NAMES — split phase (.x-content) + locked hero (.hero-inline)
+   background-clip:text needs the glyphs inside the box, so line-height
+   is 1 with a little padding instead of the original .88.
+   ──────────────────────────────────────────────────────────────── */
+.caterer-content .hero-name,
+.caterer .hero-inline .hero-name,
+.rapper-content .hero-name,
+.rapper .hero-inline .hero-name {
+  line-height: 1;
+  padding: .02em 0 .04em;
+  margin-bottom: 16px;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+.caterer-content .hero-name,
+.caterer .hero-inline .hero-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(64px, 9vw, 130px);
+  letter-spacing: -.03em;
+  background-image: linear-gradient(180deg, #ffffff 0%, #fbf3dc 40%, #ecd08a 74%, #bf9543 100%);
+  filter: drop-shadow(0 0 30px rgba(232, 196, 110, .22)) drop-shadow(0 3px 3px rgba(0, 0, 0, .5));
+}
+.rapper-content .hero-name,
+.rapper .hero-inline .hero-name {
+  font-family: var(--font-artist);
+  font-weight: 800;
+  font-size: clamp(54px, 6.6vw, 102px);
+  letter-spacing: -.045em;
+  background-image: linear-gradient(180deg, #ffffff 0%, #ffe6d6 42%, #ff9e68 78%, #ff5a24 100%);
+  filter: drop-shadow(0 0 32px rgba(255, 80, 20, .34)) drop-shadow(0 3px 3px rgba(0, 0, 0, .5));
+}
+/* Intentional stacked lockup ("The / Chef") — poster energy vs. the
+   single-line serif on the catering side. min-content forces the break. */
+.rapper-content .hero-name,
+.rapper .hero-inline .hero-name {
+  width: min-content;
+  line-height: .92;
+  padding: .08em 0 .06em;
+}
+.rapper .hero-inline .hero-name { align-self: flex-end; }
+
+/* ────────────────────────────────────────────────────────────────
+   3. ENTERTAINER TYPE — Syne replaces the condensed display face
+   (Syne is much wider, so every size is re-set here)
+   ──────────────────────────────────────────────────────────────── */
+.rapper-nav .nav-logo   { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+.rapper .section-title  { font-weight: 700; font-size: clamp(30px, 3.8vw, 54px); letter-spacing: -.03em; line-height: 1.04; }
+.rapper .stat-num       { font-weight: 800; font-size: 34px; }
+.track-title            { font-weight: 700; font-size: 20px; letter-spacing: -.01em; }
+.show-date              { font-weight: 700; font-size: 17px; letter-spacing: 0; }
+.rapper .footer-logo    { font-weight: 700; font-size: 14px; letter-spacing: .01em; }
+.album-title            { font-weight: 800; font-size: clamp(28px, 3.4vw, 46px); letter-spacing: -.03em; line-height: 1.05; }
+.album-cover-fallback span  { font-weight: 800; font-size: 24px; letter-spacing: .02em; }
+.mtrack-cover-fallback span { font-weight: 800; font-size: 54px; }
+.mtrack-title           { font-weight: 700; font-size: 20px; letter-spacing: -.015em; line-height: 1.1; }
+
+/* Catering display headings get the same soft gold light as the hero */
+.lux-menu-heading,
+.caterer .section-title,
+.cat-final .section-title {
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(180deg, #ffffff 0%, #fbf1d6 55%, #dcb868 100%);
+  padding-bottom: .06em;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   4. MENU CATEGORY CARDS — real food photography
+   ──────────────────────────────────────────────────────────────── */
+.lux-cat-card {
+  transition: border-color .45s var(--ease-lux), box-shadow .45s var(--ease-lux), transform .45s var(--ease-lux);
+}
+.lux-cat-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(240, 208, 128, .45);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .55), 0 0 0 1px rgba(240, 208, 128, .08), 0 0 44px rgba(201, 168, 76, .14);
+}
+.lux-cat-card.expanded:hover { transform: none; }
+
+.lux-cat-media {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0d0a05;
+}
+.lux-cat-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.03);
+  filter: saturate(.9) brightness(.9);
+  transition: transform 1.4s var(--ease-lux), filter .7s var(--ease-lux);
+}
+.lux-cat-card:hover .lux-cat-media img,
+.lux-cat-card:focus-within .lux-cat-media img {
+  transform: scale(1.09);
+  filter: saturate(1.04) brightness(1);
+}
+/* gradient into the card body + warm vignette */
+.lux-cat-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10, 8, 4, 0) 38%, rgba(12, 9, 4, .55) 74%, rgba(14, 11, 6, .96) 100%),
+    radial-gradient(ellipse 90% 80% at 50% 40%, transparent 55%, rgba(0, 0, 0, .35) 100%);
+}
+/* one slow gold light sweep across the photo on hover */
+.lux-cat-media::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -60%;
+  width: 45%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 236, 190, .16) 50%, transparent 100%);
+  transform: skewX(-18deg);
+  opacity: 0;
+}
+.lux-cat-card:hover .lux-cat-media::before {
+  animation: cardSweep 1.3s var(--ease-lux) forwards;
+}
+@keyframes cardSweep {
+  0%   { left: -60%; opacity: 0; }
+  20%  { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
+}
+/* category icon becomes a small gold medallion on the photo */
+.lux-cat-media .lux-cat-icon {
+  position: absolute;
+  left: 22px;
+  bottom: 14px;
+  z-index: 3;
+  width: 46px;
+  height: 46px;
+  margin: 0;
+  padding: 10px;
+  border-radius: 999px;
+  color: var(--gold-light);
+  opacity: 1;
+  background: rgba(12, 9, 4, .78);
+  border: 1px solid rgba(240, 208, 128, .45);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform .45s var(--ease-lux), border-color .45s;
+}
+.lux-cat-card:hover .lux-cat-icon { transform: translateY(-3px); border-color: var(--gold-light); }
+.lux-cat-media + .lux-cat-inner { padding-top: 20px; }
+.lux-cat-btn { transition: background .25s, border-color .25s, color .25s, transform .25s var(--ease-lux); }
+.lux-cat-btn:hover { transform: translateX(2px); }
+
+/* ────────────────────────────────────────────────────────────────
+   5. SCROLL REVEAL (armed by RevealController; `translate` composes
+   with hover `transform`, so card lifts keep working)
+   ──────────────────────────────────────────────────────────────── */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  translate: 0 26px;
+  transition:
+    opacity .9s var(--ease-lux) var(--reveal-delay, 0ms),
+    translate .9s var(--ease-lux) var(--reveal-delay, 0ms),
+    transform .45s var(--ease-lux),
+    border-color .45s var(--ease-lux),
+    box-shadow .45s var(--ease-lux);
+}
+.reveal-ready [data-reveal].is-revealed { opacity: 1; translate: none; }
+
+/* Cards and lanes: a touch more life on hover */
+.cat-lane { position: relative; overflow: hidden; }
+.cat-lane::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+  transform: scaleX(0);
+  transition: transform .6s var(--ease-lux);
+}
+.cat-lane:hover::after { transform: scaleX(1); }
+.cat-lane-cta { transition: letter-spacing .4s var(--ease-lux); }
+.cat-lane:hover .cat-lane-cta { letter-spacing: .2em; }
+.cat-step { transition: border-color .4s var(--ease-lux), background .4s var(--ease-lux), transform .45s var(--ease-lux); }
+.cat-step:hover { border-color: rgba(201, 168, 76, .35); background: rgba(201, 168, 76, .05); transform: translateY(-3px); }
+.review-card { transition: border-color .4s var(--ease-lux), transform .45s var(--ease-lux), box-shadow .45s var(--ease-lux); }
+.review-card:hover { border-color: rgba(201, 168, 76, .28); transform: translateY(-4px); box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+
+/* Primary buttons: soft gold breathing glow on hover */
+.caterer .btn-primary,
+.cat-final .btn-primary,
+.booking-cta .btn-primary { transition: transform .3s var(--ease-lux), box-shadow .35s var(--ease-lux), background .3s; }
+.caterer .btn-primary:hover,
+.cat-final .btn-primary:hover { box-shadow: 0 10px 36px rgba(201, 168, 76, .38); }
+
+/* ────────────────────────────────────────────────────────────────
+   6. BOOK THE CHEF — earlier in the page, more conversion-focused
+   ──────────────────────────────────────────────────────────────── */
+.booking-cta {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 70% at 25% 50%, rgba(201, 168, 76, .10), transparent 65%),
+    radial-gradient(ellipse 50% 60% at 85% 20%, rgba(201, 168, 76, .06), transparent 70%),
+    linear-gradient(180deg, #0e0b06 0%, #0b0804 100%);
+  border-top: 1px solid rgba(201, 168, 76, .14);
+  border-bottom: 1px solid rgba(201, 168, 76, .14);
+}
+.booking-points {
+  list-style: none;
+  padding: 0;
+  margin: -12px auto 30px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 18px;
+  max-width: 520px;
+}
+.booking-points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, .72);
+  letter-spacing: .02em;
+}
+.booking-points li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--gold);
+  box-shadow: 0 0 10px rgba(240, 208, 128, .7);
+}
+.booking-cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.booking-cta-media { display: flex; justify-content: center; }
+
+/* ────────────────────────────────────────────────────────────────
+   7. ENDORSEMENT VIDEO PLAYER — muted autoplay + "tap for sound"
+   ──────────────────────────────────────────────────────────────── */
+.endorse-screen {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(201, 168, 76, .35);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .6), 0 0 0 6px rgba(255, 255, 255, .03), 0 0 60px rgba(201, 168, 76, .10);
+  transition: transform .6s var(--ease-lux), box-shadow .6s var(--ease-lux);
+}
+.endorse-frame:hover .endorse-screen { transform: translateY(-4px); box-shadow: 0 34px 90px rgba(0, 0, 0, .65), 0 0 0 6px rgba(255, 255, 255, .04), 0 0 70px rgba(201, 168, 76, .16); }
+.endorse-screen .endorse-video {
+  display: block;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.endorse-screen::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 34%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .55));
+}
+.sv-controls {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.sv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 208, 128, .4);
+  background: rgba(8, 6, 3, .62);
+  color: #f6e7c1;
+  font: 600 10.5px/1 'DM Sans', system-ui, sans-serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background .3s, border-color .3s, transform .3s var(--ease-lux);
+}
+.sv-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.sv-btn:hover { background: rgba(20, 15, 6, .82); border-color: var(--gold-light); transform: translateY(-1px); }
+.sv-btn:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.sv-btn--icon { width: 40px; padding: 0; justify-content: center; }
+.sv-sound:not(.is-on) { animation: soundInvite 2.8s var(--ease-lux) 1.2s 3; }
+.sv-sound.is-on { background: rgba(201, 168, 76, .9); color: #0a0800; border-color: var(--gold-light); }
+@keyframes soundInvite {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 208, 128, 0); }
+  40%      { box-shadow: 0 0 0 7px rgba(240, 208, 128, .16); }
+}
+
+@media (max-width: 760px) { .endorse-screen { max-width: 260px; } }
+
+/* ────────────────────────────────────────────────────────────────
+   8. ENTERTAINER HERO — full-length studio loop (zoomed-out)
+   Desktop: the 9:16 clip keeps its full frame (head to toe) as a tall
+   column just right of the artist portrait, feathered into the dark;
+   the veil is lighter than before so the figure reads, and darkest
+   under the right-aligned hero text. Phones: fills the hero.
+   ──────────────────────────────────────────────────────────────── */
+@media (min-width: 901px) {
+  .entertainerHeroVideo {
+    left: 3%;
+    right: auto;
+    width: auto;
+    height: 100%;
+    aspect-ratio: 9 / 16;
+    object-fit: cover;
+    object-position: 50% 50%;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+      linear-gradient(180deg, transparent 0%, #000 10%, #000 86%, transparent 100%);
+    -webkit-mask-composite: source-in;
+            mask-image:
+      linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+      linear-gradient(180deg, transparent 0%, #000 10%, #000 86%, transparent 100%);
+            mask-composite: intersect;
+    filter: saturate(.95) contrast(1.04);
+  }
+  .entertainerHeroVeil {
+    background:
+      radial-gradient(ellipse 55% 50% at 80% 10%, rgba(255, 80, 20, .18) 0%, transparent 55%),
+      linear-gradient(270deg, rgba(8, 3, 5, .88) 0%, rgba(8, 3, 5, .62) 32%, rgba(8, 3, 5, .30) 58%, rgba(8, 3, 5, .42) 100%),
+      linear-gradient(0deg, rgba(8, 3, 5, .55) 0%, transparent 40%);
+  }
+}
+@media (max-width: 900px) {
+  .entertainerHeroVideo { object-position: 50% 30%; }
+  .entertainerHeroVeil {
+    background:
+      radial-gradient(ellipse 80% 40% at 80% 0%, rgba(255, 80, 20, .16) 0%, transparent 60%),
+      linear-gradient(180deg, rgba(8, 3, 5, .60) 0%, rgba(8, 3, 5, .48) 35%, rgba(8, 3, 5, .74) 68%, rgba(8, 3, 5, .94) 100%);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ──────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .caterer-content .hero-name,
+  .caterer .hero-inline .hero-name { font-size: clamp(52px, 13vw, 90px); }
+  .rapper-content .hero-name,
+  .rapper .hero-inline .hero-name { font-size: clamp(46px, 11vw, 84px); }
+}
+@media (max-width: 600px) {
+  .caterer-content .hero-name,
+  .caterer .hero-inline .hero-name { font-size: clamp(44px, 14vw, 72px); }
+  .rapper-content .hero-name,
+  .rapper .hero-inline .hero-name { font-size: clamp(40px, 12.5vw, 60px); }
+  .split-label-name { gap: 8px; }
+  .split-kicker { font-size: 9px; letter-spacing: .38em; gap: 8px; }
+  .rapper-label .split-kicker { margin-right: -.38em; }
+  .split-kicker::after { width: 22px; }
+  .caterer-label .split-word { font-size: 20px; letter-spacing: .08em; }
+  .rapper-label .split-word {
+    font-size: 22px;
+    /* on phones the word sits over the bright orange portrait: add a dark halo */
+    filter: drop-shadow(0 1px 6px rgba(0, 0, 0, .85)) drop-shadow(0 0 18px rgba(255, 85, 32, .35));
+  }
+  .lux-cat-media .lux-cat-icon { width: 40px; height: 40px; padding: 9px; left: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caterer-label .split-word,
+  .rapper-label .split-word,
+  .sv-sound:not(.is-on) { animation: none; }
+  .lux-cat-card:hover .lux-cat-media::before { animation: none; }
+  .lux-cat-media img,
+  .lux-cat-card,
+  .cat-step,
+  .review-card,
+  .endorse-screen { transition: none; }
+  .lux-cat-card:hover,
+  .cat-step:hover,
+  .review-card:hover,
+  .endorse-frame:hover .endorse-screen { transform: none; }
+  .lux-cat-card:hover .lux-cat-media img { transform: scale(1.03); }
+}

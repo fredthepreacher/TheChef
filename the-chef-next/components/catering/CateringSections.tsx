@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { CATERING_PHONE, CATERING_PHONE_DISPLAY, CHEF_NAME, tel } from "@/data/contact";
 import { DELIVERY_LANE_ENABLED } from "@/data/launch";
 
@@ -29,10 +30,10 @@ export function ServiceLanes() {
   return (
     <section className="section cat-lanes" id="caterer-services" aria-labelledby="caterer-services-title">
       <p className="section-tag">Choose What You Need</p>
-      <h2 className="section-title" id="caterer-services-title">How can Chef serve you?</h2>
+      <h2 className="section-title" id="caterer-services-title" data-reveal="">How can Chef serve you?</h2>
       <div className={`cat-lane-grid${DELIVERY_LANE_ENABLED ? " cat-lane-grid--three" : ""}`}>
-        {lanes.map((l) => (
-          <a className="cat-lane" href={l.href} key={l.id}>
+        {lanes.map((l, i) => (
+          <a className="cat-lane" href={l.href} key={l.id} data-reveal="" style={{ "--reveal-delay": `${i * 110}ms` } as CSSProperties}>
             <h3>{l.title}</h3>
             <p>{l.body}</p>
             <span className="cat-lane-cta">{l.cta} →</span>
@@ -56,10 +57,10 @@ export function HowItWorks() {
   return (
     <section className="section cat-how" id="caterer-how" aria-labelledby="caterer-how-title">
       <p className="section-tag">How It Works</p>
-      <h2 className="section-title" id="caterer-how-title">From first bite to booked date</h2>
+      <h2 className="section-title" id="caterer-how-title" data-reveal="">From first bite to booked date</h2>
       <ol className="cat-steps">
         {steps.map((s, i) => (
-          <li className="cat-step" key={s.t}>
+          <li className="cat-step" key={s.t} data-reveal="" style={{ "--reveal-delay": `${i * 90}ms` } as CSSProperties}>
             <span className="cat-step-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
             <h3>{s.t}</h3>
             <p>{s.d}</p>
@@ -94,10 +95,10 @@ export function CateringFAQ() {
   return (
     <section className="section cat-faq" id="caterer-faq" aria-labelledby="caterer-faq-title">
       <p className="section-tag">Questions</p>
-      <h2 className="section-title" id="caterer-faq-title">Good to know</h2>
+      <h2 className="section-title" id="caterer-faq-title" data-reveal="">Good to know</h2>
       <div className="cat-faq-list">
-        {faqs.map((f) => (
-          <details className="cat-faq-item" key={f.q}>
+        {faqs.map((f, i) => (
+          <details className="cat-faq-item" key={f.q} data-reveal="" style={{ "--reveal-delay": `${i * 70}ms` } as CSSProperties}>
             <summary>{f.q}</summary>
             <p>{f.a}</p>
           </details>
@@ -113,7 +114,7 @@ export function FinalCTA() {
   return (
     <section className="cat-final" id="caterer-start" aria-labelledby="caterer-start-title">
       <p className="section-tag" style={{ textAlign: "center" }}>✦ Five Star Meals · Served With Love ✦</p>
-      <h2 className="section-title" id="caterer-start-title">Every event deserves<br />a five-star experience.</h2>
+      <h2 className="section-title" id="caterer-start-title" data-reveal="">Every event deserves<br />a five-star experience.</h2>
       <p className="section-body">
         Build your menu and tell {CHEF_NAME} about your event. We&apos;ll review availability, confirm your selections,
         and send your custom quote.
