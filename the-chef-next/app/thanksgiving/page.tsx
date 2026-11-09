@@ -72,13 +72,13 @@ export default function ThanksgivingPage() {
         </div>
         <figure className="tg-hero-media">
           <img
-            src="/assets/thanksgiving/feast-spread.webp"
-            alt="A full spread of Chef Frankie's food in chafing dishes at a catered event"
+            src="/assets/thanksgiving/chef-at-the-island.webp"
+            alt="Chef Frankie plating a spread at a client's kitchen island"
             width={900}
-            height={1184}
+            height={1160}
             fetchPriority="high"
           />
-          <figcaption>From one of Chef&apos;s catered events</figcaption>
+          <figcaption>Chef Frankie at a client&apos;s home event</figcaption>
         </figure>
       </section>
 

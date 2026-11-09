@@ -151,8 +151,9 @@
 @media (max-width: 860px) {
   .tg-hero, .tg-menu { grid-template-columns: 1fr; gap: 36px; }
   .tg-hero { padding-top: 16px; padding-bottom: 56px; }
-  .tg-hero-media { order: -1; }
-  .tg-hero-media img { aspect-ratio: 16 / 11; }
+  /* Phones: the ad's promise (headline, price, deadline, CTAs) comes first;
+     the photo follows as a shorter landscape crop centred on Chef. */
+  .tg-hero-media img { aspect-ratio: 16 / 10; object-position: 60% 48%; }
   .tg-hero-media::before { display: none; }
   .tg-menu-media img { aspect-ratio: 16 / 11; }
   .tg-steps { grid-template-columns: 1fr; }

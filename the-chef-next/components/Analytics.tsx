@@ -4,7 +4,14 @@ import { useEffect } from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { captureAttribution } from "@/lib/attribution";
-import { ANALYTICS_ENABLED, CONSENT_DEFAULT, GTM_ID, isUntrackedPath, trackCallClick } from "@/lib/analytics";
+import {
+  ANALYTICS_ENABLED,
+  CONSENT_DEFAULT,
+  GTM_ID,
+  consentBootstrap,
+  isUntrackedPath,
+  trackCallClick,
+} from "@/lib/analytics";
 
 /**
  * Site-wide measurement shell (contract: lib/analytics.ts).
@@ -33,7 +40,6 @@ export default function Analytics() {
   }, [untracked]);
 
   if (!ANALYTICS_ENABLED || untracked) return null;
-  const c = JSON.stringify(CONSENT_DEFAULT);
 
   return (
     <>
@@ -49,7 +55,7 @@ export default function Analytics() {
       </noscript>
       <Script id="gtm" strategy="afterInteractive">
       {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}` +
-        `gtag('consent','default',{ad_storage:${c},ad_user_data:${c},ad_personalization:${c},analytics_storage:${c},wait_for_update:500});` +
+        consentBootstrap(CONSENT_DEFAULT) +
         `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});` +
         `var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;` +
         `j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})` +

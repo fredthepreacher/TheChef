@@ -57,7 +57,9 @@ export default function PrivacyPage() {
             <strong>Ad measurement (when switched on).</strong> We may use Google Tag Manager to run Google Analytics,
             Google Ads and Meta (Facebook/Instagram) measurement tags. These use cookies and similar technologies to
             measure visits and which ads lead to requests. We never send your name, email, phone number or request
-            details to these services from this website.
+            details to these services from this website. If your browser sends a Global Privacy Control signal, ad
+            measurement is switched off for your visit, and visitors in the European Economic Area, the UK and
+            Switzerland are not measured for ads by default.
           </li>
           <li>
             <strong>Your menu picks.</strong> Dishes you select on the menu are remembered in your own browser so you can

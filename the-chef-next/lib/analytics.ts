@@ -7,8 +7,15 @@
  * notice is approved (data/launch.ts → PRIVACY_NOTICE_APPROVED).
  *
  *   NEXT_PUBLIC_GTM_ID                   e.g. GTM-XXXXXXX
- *   NEXT_PUBLIC_CONSENT_DEFAULT          "denied" (default) | "granted" —
- *                                        Consent Mode v2 default state
+ *   NEXT_PUBLIC_CONSENT_DEFAULT          Consent Mode v2 defaults:
+ *                                        "denied" (code default) — all denied
+ *                                        "granted" — all granted
+ *                                        "region" (intended production setting)
+ *                                          — granted globally, but ad signals
+ *                                          denied when the browser sends Global
+ *                                          Privacy Control, and everything
+ *                                          denied in the EEA, UK and CH
+ *                                        ads_data_redaction is always on.
  *   NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION Search Console meta-tag token
  *                                        (app/layout.tsx; independent of GTM)
  *
@@ -35,8 +42,41 @@ declare global {
 
 export const GTM_ID = (process.env.NEXT_PUBLIC_GTM_ID ?? "").trim();
 export const ANALYTICS_ENABLED = /^GTM-[A-Z0-9]+$/.test(GTM_ID);
-export const CONSENT_DEFAULT: "granted" | "denied" =
-  process.env.NEXT_PUBLIC_CONSENT_DEFAULT === "granted" ? "granted" : "denied";
+const consentEnv = process.env.NEXT_PUBLIC_CONSENT_DEFAULT;
+export const CONSENT_DEFAULT: "granted" | "denied" | "region" =
+  consentEnv === "granted" || consentEnv === "region" ? consentEnv : "denied";
+
+/** EU 27 + IS, LI, NO (EEA) + GB + CH — denied by default in "region" mode. */
+export const CONSENT_DENIED_REGIONS = [
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE",
+  "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE",
+  "IS", "LI", "NO", "GB", "CH",
+];
+
+/**
+ * The inline Consent Mode v2 bootstrap, run before gtm.js is queued.
+ * Region-specific defaults take precedence over the global one in Google's
+ * tags, so the order of the two default calls does not matter.
+ */
+export function consentBootstrap(mode: typeof CONSENT_DEFAULT): string {
+  const all = (v: string) =>
+    `{ad_storage:'${v}',ad_user_data:'${v}',ad_personalization:'${v}',analytics_storage:'${v}',wait_for_update:500}`;
+  const lines: string[] = [];
+  if (mode === "region") {
+    lines.push(
+      `var gpc=navigator.globalPrivacyControl===true?'denied':'granted';` +
+        `gtag('consent','default',{ad_storage:gpc,ad_user_data:gpc,ad_personalization:gpc,analytics_storage:'granted'});`,
+      `gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:${JSON.stringify(
+        CONSENT_DENIED_REGIONS,
+      )},wait_for_update:500});`,
+    );
+  } else {
+    lines.push(`gtag('consent','default',${all(mode)});`);
+  }
+  // Redact ad-click identifiers wherever ad_storage ends up denied.
+  lines.push(`gtag('set','ads_data_redaction',true);`);
+  return lines.join("");
+}
 
 /** Paths that must never load or receive tracking. */
 export const isUntrackedPath = (path: string) => /^\/(crm|proposal|api)(\/|$)/.test(path);
