@@ -49,6 +49,11 @@ export default function PrivacyPage() {
             and email for rate limiting.
           </li>
           <li>
+            <strong>Facebook and Instagram lead forms.</strong> If you send a request through one of our lead forms on
+            Facebook or Instagram, Meta passes us the details you enter there (such as your name, email and phone), and
+            we use them the same way as a request sent on this website.
+          </li>
+          <li>
             <strong>How you found us.</strong> If you arrive through an ad or a tagged link, we keep the campaign details
             from that link (for example the ad source and campaign name, and an ad-click ID) with your request, so we
             know which ads bring us customers.
@@ -79,8 +84,9 @@ export default function PrivacyPage() {
         <h2>Who helps us</h2>
         <p>
           Our website and request system run on service providers that process data for us: Vercel (website hosting),
-          Supabase (secure database), Cloudflare (spam protection) and, when ad measurement is switched on, Google and
-          Meta. Each processes data under its own terms and privacy policy.
+          Supabase (secure database), Cloudflare (spam protection), Meta (our Facebook and Instagram lead forms) and,
+          when ad measurement is switched on, Google and Meta. Each processes data under its own terms and privacy
+          policy.
         </p>
 
         <h2>Your choices</h2>
