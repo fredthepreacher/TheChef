@@ -9,13 +9,18 @@ import CateringHeroVideo from "./CateringHeroVideo";
 import CurrentYear from "./CurrentYear";
 import RevealController from "./RevealController";
 import { ServiceLanes, HowItWorks, CateringFAQ, FinalCTA } from "./catering/CateringSections";
+import type { Seasonal } from "./SplitStage";
+import { THANKSGIVING, longDate, usd } from "@/data/thanksgiving";
 
 /**
  * The caterer side of the split-screen — luxury catering brand world.
  * Conversion order: hero → choose what you need → menu (select dishes) →
  * Book The Chef → how it works → story → reviews → FAQ → final CTA.
  */
-export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
+export default function CatererWorld({ navVisible, seasonal }: { navVisible: boolean; seasonal: Seasonal }) {
+  const tgFrom = Math.min(...THANKSGIVING.feasts.map((f) => f.price));
+  const tgMin = Math.min(...THANKSGIVING.feasts.map((f) => f.minGuests));
+  const tgMax = Math.max(...THANKSGIVING.feasts.map((f) => f.maxGuests));
   return (
     <section className="world caterer" id="catererWorld">
       <nav className={`nav caterer-nav${navVisible ? " visible" : ""}`} id="catererNav" aria-label="Catering">
@@ -57,10 +62,31 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
             <a className="btn-primary" href="/catering/inquiry">Build My Event</a>
             <a className="btn-ghost" href="#caterer-menu">Explore Menu</a>
           </div>
+          {seasonal.thanksgiving && (
+            <Link className="hero-season" href="/thanksgiving">
+              <span className="hero-season-dot" aria-hidden="true" />
+              Now booking Thanksgiving feasts <span aria-hidden="true">→</span>
+            </Link>
+          )}
         </div>
       </div>
 
       <div className="page-sections">
+        {/* SEASONAL — Thanksgiving offer (owner-gated: data/thanksgiving.ts) */}
+        {seasonal.thanksgiving && (
+          <aside className="season-band" aria-label="Thanksgiving feasts">
+            <div className="season-band-text">
+              <p className="section-tag">Thanksgiving {THANKSGIVING.year}</p>
+              <p className="season-band-title">This Thanksgiving, you just sit down.</p>
+              <p className="season-band-sub">
+                Turkey, homemade sides and pie for {tgMin}–{tgMax} guests, from {usd(tgFrom)}. Order by{" "}
+                {longDate(THANKSGIVING.orderByISO)}.
+              </p>
+            </div>
+            <Link className="btn-primary season-band-cta" href="/thanksgiving">See the Feasts</Link>
+          </aside>
+        )}
+
         {/* CHOOSE WHAT YOU NEED */}
         <ServiceLanes />
 
@@ -143,7 +169,15 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
             />
             <span className="footer-logo">The Chef Catering</span>
           </span>
-          <span>© <CurrentYear /> The Chef Catering · All Rights Reserved</span>
+          <span>
+            © <CurrentYear /> The Chef Catering · All Rights Reserved
+            {seasonal.privacy && (
+              <>
+                {" · "}
+                <Link href="/privacy">Privacy</Link>
+              </>
+            )}
+          </span>
         </footer>
       </div>
     </section>

@@ -7,6 +7,10 @@ import { menuCategories } from "@/data/menu";
 import { CATERING_PHONE, CATERING_PHONE_DISPLAY, CHEF_NAME, tel } from "@/data/contact";
 import { groupSelection, itemKey } from "@/lib/catering/menu-catalog";
 import { useEventMenu } from "@/lib/catering/event-menu-store";
+import { readAttribution } from "@/lib/attribution";
+import { trackInquiryStart, trackLead } from "@/lib/analytics";
+import { THANKSGIVING, feastById, feastIncludes, usd, type FeastId } from "@/data/thanksgiving";
+import { packages } from "@/data/menu";
 
 type Turnstile = {
   render: (element: HTMLElement, options: Record<string, unknown>) => string;
@@ -38,6 +42,7 @@ const BUDGETS = [
 ];
 
 const EVENT_TYPES = [
+  "Thanksgiving dinner",
   "Wedding",
   "Birthday",
   "Baby shower",
@@ -54,10 +59,24 @@ type Summary = { date: string; guests: string; location: string; type: string };
 export default function InquiryForm({
   selectedPackage,
   initialService,
+  thanksgivingFeast,
+  privacyVisible = false,
 }: {
   selectedPackage: string;
   initialService: string;
+  /** Set → Thanksgiving order mode (only passed while the offer is visible). */
+  thanksgivingFeast?: FeastId | null;
+  /** Link the privacy notice (only while that page is visible). */
+  privacyVisible?: boolean;
 }) {
+  const tgMode = thanksgivingFeast !== undefined && thanksgivingFeast !== null;
+  const [feastId, setFeastId] = useState<FeastId>(thanksgivingFeast ?? "family");
+  const [tgSides, setTgSides] = useState<string[]>([]);
+  const [tgPies, setTgPies] = useState<string[]>([]);
+  const [tgBread, setTgBread] = useState("");
+  const feast = feastById(feastId)!;
+  const started = useRef(false);
+  const pkgCard = packages.find((p) => p.badge === selectedPackage);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
@@ -65,7 +84,11 @@ export default function InquiryForm({
   const [ready, setReady] = useState(false);
   const [minDate, setMinDate] = useState<string>();
   const [openCat, setOpenCat] = useState<string | null>(null);
-  const [summary, setSummary] = useState<Summary>({ date: "", guests: "", location: "", type: "" });
+  const [summary, setSummary] = useState<Summary>(
+    thanksgivingFeast
+      ? { date: THANKSGIVING.dayISO, guests: "", location: "", type: "Thanksgiving dinner" }
+      : { date: "", guests: "", location: "", type: "" },
+  );
   const widget = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string>();
   const requestId = useRef<string>();
@@ -102,7 +125,23 @@ export default function InquiryForm({
     }
   }
 
+  function chooseFeast(id: FeastId) {
+    const next = feastById(id)!;
+    setFeastId(id);
+    setTgSides((cur) => cur.slice(0, next.sides));
+    setTgPies((cur) => cur.slice(0, next.pies));
+  }
+
+  function toggleIn(list: string[], value: string, max: number) {
+    if (list.includes(value)) return list.filter((v) => v !== value);
+    return list.length < max ? [...list, value] : list;
+  }
+
   function onFormChange(e: React.FormEvent<HTMLFormElement>) {
+    if (!started.current) {
+      started.current = true;
+      trackInquiryStart(tgMode ? "thanksgiving" : "catering");
+    }
     const f = new FormData(e.currentTarget);
     setSummary({
       date: String(f.get("requested_date") ?? ""),
@@ -120,13 +159,19 @@ export default function InquiryForm({
     // server can de-duplicate; a fresh one after any definitive rejection.
     requestId.current ??= crypto.randomUUID();
     const form = new FormData(e.currentTarget);
+    form.delete("tg_feast"); // UI-only radio group; the feast travels as `thanksgiving`
     try {
       const response = await fetch("/api/catering/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...Object.fromEntries(form),
-          selected_menu_items: selected,
+          package_interest: tgMode ? feast.packageInterest : selectedPackage,
+          selected_menu_items: tgMode ? [] : selected,
+          ...(tgMode
+            ? { thanksgiving: { feast: feast.id, sides: tgSides, pies: tgPies, bread: feast.breadChoice ? tgBread : "" } }
+            : {}),
+          attribution: readAttribution(),
           request_id: requestId.current,
           consent: form.get("consent") === "on",
           turnstile_token: token,
@@ -136,7 +181,17 @@ export default function InquiryForm({
       setMessage(result.message ?? "Unable to submit. Please try again or call Chef.");
       setSuccess(response.ok);
       if (response.ok) {
-        clear();
+        trackLead({
+          requestId: requestId.current,
+          packageInterest: tgMode ? feast.packageInterest : selectedPackage,
+          serviceStyle: String(form.get("service_style") ?? ""),
+          guestCount: Number(form.get("guest_count") ?? 0),
+          occasion: tgMode ? "thanksgiving" : "catering",
+          value: tgMode ? feast.price : undefined,
+        });
+        if (!tgMode) clear();
+        // Stable URL for URL-based conversion counting (no reload).
+        window.history.replaceState(null, "", "/catering/inquiry/thanks");
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         if (response.status !== 409) requestId.current = undefined;
@@ -158,13 +213,25 @@ export default function InquiryForm({
         <p className="event-kicker">Request received</p>
         <h2>Your request is in.</h2>
         <p>{message}</p>
-        <ol className="event-next">
-          <li><strong>{CHEF_NAME} reviews</strong> your date, guest count and menu.</li>
-          <li><strong>You receive a custom quote</strong> — add or trim dishes to fit your budget.</li>
-          <li><strong>Approve the quote and pay the deposit</strong> to reserve your date.</li>
-        </ol>
+        {tgMode ? (
+          <ol className="event-next">
+            <li><strong>{CHEF_NAME} reviews</strong> your feast, sides and pies.</li>
+            <li><strong>Chef confirms the details with you</strong> — timing, how you&apos;ll receive your feast and payment.</li>
+            <li><strong>Your feast is reserved</strong> once Chef confirms your order.</li>
+          </ol>
+        ) : (
+          <ol className="event-next">
+            <li><strong>{CHEF_NAME} reviews</strong> your date, guest count and menu.</li>
+            <li><strong>You receive a custom quote</strong> — add or trim dishes to fit your budget.</li>
+            <li><strong>Approve the quote and pay the deposit</strong> to reserve your date.</li>
+          </ol>
+        )}
         <p className="event-fine">
-          Your date is <strong>not reserved</strong> until your quote is approved and the required deposit is paid.
+          {tgMode ? (
+            <>Your feast is <strong>not reserved</strong> until Chef confirms your order.</>
+          ) : (
+            <>Your date is <strong>not reserved</strong> until your quote is approved and the required deposit is paid.</>
+          )}{" "}
           Need to add something or have a close date? Call <a href={tel(CATERING_PHONE)}>{CATERING_PHONE_DISPLAY}</a>.
         </p>
         <Link href="/">Return to the website</Link>
@@ -173,9 +240,108 @@ export default function InquiryForm({
 
   return (
     <form className="inquiry-form event-form" onSubmit={submit} onChange={onFormChange}>
-      <input type="hidden" name="package_interest" value={selectedPackage} />
+      {!tgMode && pkgCard && (
+        <p className="event-pkg-note">
+          <span className="event-pkg-kicker">Starting point</span>
+          <strong>{pkgCard.badge} package</strong> · {pkgCard.guests} · {pkgCard.price.prefix}
+          {pkgCard.price.strong}
+          <a href="/catering/inquiry">Change</a>
+        </p>
+      )}
+
+      {/* 1 — THANKSGIVING FEAST (seasonal mode) */}
+      {tgMode && (
+        <fieldset disabled={busy} className="tg-fieldset">
+          <legend><span className="event-step">1</span> Your Thanksgiving feast</legend>
+          <div className="tg-feast-grid" role="radiogroup" aria-label="Feast">
+            {THANKSGIVING.feasts.map((f) => (
+              <label className={`tg-feast-opt${f.id === feastId ? " is-on" : ""}`} key={f.id}>
+                <input
+                  type="radio"
+                  name="tg_feast"
+                  value={f.id}
+                  checked={f.id === feastId}
+                  onChange={() => chooseFeast(f.id)}
+                />
+                <span className="tg-feast-serves">Serves {f.minGuests}–{f.maxGuests}</span>
+                <span className="tg-feast-name">{f.name}</span>
+                <span className="tg-feast-price">{usd(f.price)}</span>
+              </label>
+            ))}
+          </div>
+          <p className="event-help">Includes: {feastIncludes(feast).join(" · ")}.</p>
+
+          <div className="tg-pick">
+            <p className="tg-pick-head">
+              Holiday sides <span>{tgSides.length} of {feast.sides}</span>
+            </p>
+            <div className="tg-chip-grid">
+              {THANKSGIVING.sides.map((side) => {
+                const on = tgSides.includes(side);
+                return (
+                  <button
+                    type="button"
+                    key={side}
+                    className={`lux-item-pick tg-chip${on ? " is-picked" : ""}`}
+                    aria-pressed={on}
+                    disabled={!on && tgSides.length >= feast.sides}
+                    onClick={() => setTgSides((cur) => toggleIn(cur, side, feast.sides))}
+                  >
+                    <span className="lux-item-name">{side}</span>
+                    <span className="lux-item-mark" aria-hidden="true">{on ? "✓" : "+"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="tg-pick">
+            <p className="tg-pick-head">
+              Homemade {feast.pies === 1 ? "pie" : "pies"} <span>{tgPies.length} of {feast.pies}</span>
+            </p>
+            <div className="tg-chip-grid">
+              {THANKSGIVING.pies.map((pie) => {
+                const on = tgPies.includes(pie);
+                return (
+                  <button
+                    type="button"
+                    key={pie}
+                    className={`lux-item-pick tg-chip${on ? " is-picked" : ""}`}
+                    aria-pressed={on}
+                    disabled={!on && tgPies.length >= feast.pies}
+                    onClick={() => setTgPies((cur) => toggleIn(cur, pie, feast.pies))}
+                  >
+                    <span className="lux-item-name">{pie}</span>
+                    <span className="lux-item-mark" aria-hidden="true">{on ? "✓" : "+"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {feast.breadChoice && (
+            <label>
+              Bread
+              <select value={tgBread} onChange={(e) => setTgBread(e.target.value)}>
+                <option value="">Either is fine</option>
+                {THANKSGIVING.breads.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </label>
+          )}
+
+          <label>
+            Notes for Chef
+            <textarea
+              name="menu_notes"
+              maxLength={MENU_NOTES_MAX - 400}
+              placeholder="Anything to swap, add or know about your Thanksgiving table…"
+            />
+          </label>
+        </fieldset>
+      )}
 
       {/* 1 — MENU */}
+      {!tgMode && (
       <fieldset disabled={busy}>
         <legend><span className="event-step">1</span> Your menu</legend>
         <p className="event-help">
@@ -262,10 +428,11 @@ export default function InquiryForm({
           />
         </label>
       </fieldset>
+      )}
 
       {/* 2 — EVENT */}
       <fieldset disabled={busy}>
-        <legend><span className="event-step">2</span> Your event</legend>
+        <legend><span className="event-step">2</span> {tgMode ? "Your Thanksgiving" : "Your event"}</legend>
         <div className="crm-columns">
           <label>
             Event type
@@ -273,6 +440,7 @@ export default function InquiryForm({
               name="event_type"
               list="event-type-options"
               placeholder="Wedding, birthday, corporate dinner…"
+              defaultValue={tgMode ? "Thanksgiving dinner" : undefined}
               maxLength={200}
               required
             />
@@ -282,7 +450,13 @@ export default function InquiryForm({
           </label>
           <label>
             Event date
-            <input name="requested_date" type="date" min={minDate} required />
+            <input
+              name="requested_date"
+              type="date"
+              min={minDate}
+              defaultValue={tgMode ? THANKSGIVING.dayISO : undefined}
+              required
+            />
           </label>
           <label>
             Start time (if known)
@@ -290,7 +464,15 @@ export default function InquiryForm({
           </label>
           <label>
             Estimated guests
-            <input name="guest_count" type="number" inputMode="numeric" min="1" max="10000" required />
+            <input
+              name="guest_count"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="10000"
+              placeholder={tgMode ? `Serves ${feast.minGuests}–${feast.maxGuests}` : undefined}
+              required
+            />
           </label>
           <label>
             Event city &amp; ZIP
@@ -413,11 +595,24 @@ export default function InquiryForm({
           <div><dt>Date</dt><dd>{summary.date || "—"}</dd></div>
           <div><dt>Guests</dt><dd>{summary.guests || "—"}</dd></div>
           <div><dt>Location</dt><dd>{summary.location || "—"}</dd></div>
-          <div><dt>Menu</dt><dd>{selected.length ? `${selected.length} ${selected.length === 1 ? "dish" : "dishes"}` : "Chef to suggest"}</dd></div>
+          {tgMode ? (
+            <div><dt>Feast</dt><dd>{feast.name} · {usd(feast.price)}</dd></div>
+          ) : (
+            <div><dt>Menu</dt><dd>{selected.length ? `${selected.length} ${selected.length === 1 ? "dish" : "dishes"}` : "Chef to suggest"}</dd></div>
+          )}
         </dl>
         <p className="event-promise">
-          Submitting sends your request to {CHEF_NAME}. It <strong>does not reserve your date or confirm a price</strong>.
-          Your date is reserved once your custom quote is approved and the required deposit is paid.
+          {tgMode ? (
+            <>
+              Submitting sends your Thanksgiving order request to {CHEF_NAME}. It <strong>does not reserve your feast</strong> —
+              Chef confirms availability, your selections and the details with you first.
+            </>
+          ) : (
+            <>
+              Submitting sends your request to {CHEF_NAME}. It <strong>does not reserve your date or confirm a price</strong>.
+              Your date is reserved once your custom quote is approved and the required deposit is paid.
+            </>
+          )}
         </p>
       </section>
 
@@ -428,7 +623,14 @@ export default function InquiryForm({
         </span>
       </label>
       <p className="event-fine">
-        Your details are used by The Chef Catering only to respond to your request and plan your event.
+        Your details are used by The Chef Catering only to respond to your request and plan your event — never sold or
+        added to marketing lists.
+        {privacyVisible && (
+          <>
+            {" "}
+            <Link href="/privacy">Privacy notice</Link>.
+          </>
+        )}
       </p>
       {key && (
         <>
@@ -445,7 +647,7 @@ export default function InquiryForm({
         </p>
       )}
       <button className="event-submit" disabled={busy || Boolean(key && !token)} type="submit">
-        {busy ? "Sending your request…" : "Send My Event Request"}
+        {busy ? "Sending your request…" : tgMode ? "Send My Thanksgiving Order Request" : "Send My Event Request"}
       </button>
     </form>
   );

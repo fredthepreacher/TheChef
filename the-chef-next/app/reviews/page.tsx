@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ReviewsSection from "@/components/ReviewsSection";
 import BodyClass from "@/components/BodyClass";
+import CurrentYear from "@/components/CurrentYear";
 import { CATERING_PHONE, BRAND, tel } from "@/data/contact";
 import { SHOW_UNVERIFIED_STATS } from "@/data/launch";
 
@@ -129,7 +130,7 @@ export default function ReviewsPage() {
 
       <footer className="rv-footer">
         <span className="rv-footer-brand">{BRAND.cateringFull}</span>
-        <span className="rv-footer-copy">© 2025 The Chef Catering Services · Five Star Meals on Wheels · All Rights Reserved</span>
+        <span className="rv-footer-copy">© <CurrentYear /> The Chef Catering Services · Five Star Meals on Wheels · All Rights Reserved</span>
       </footer>
     </>
   );

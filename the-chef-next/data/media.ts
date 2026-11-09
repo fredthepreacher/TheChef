@@ -52,3 +52,27 @@ export const REVIEW_VIDEO: EndorsementVideo | null = {
   width: 540,
   height: 960,
 };
+
+export type FilmLoop = LoopVideo & {
+  width: number;
+  height: number;
+  kicker: string;
+  title: string;
+  /** Accessible description of what the clip shows. */
+  label: string;
+};
+
+/** 898383c2.MOV — Chef's own night-drive footage (city skyline, Chef at the
+ *  wheel, close profile). Edit: 3.6–6.6s + 12.6–24.2s (0.5s crossfade),
+ *  avoiding the storefront-logo shots and the black tail; light contrast lift,
+ *  vignette, fades to black for a clean loop. 960×540 H.264, 30 fps, 14.1s,
+ *  audio removed (1.10 MB from 23.4 MB). Lazy-loaded on the Entertainer side. */
+export const ENTERTAINER_FILM: FilmLoop | null = {
+  src: "/assets/video/entertainer-night-drive.mp4",
+  poster: "/assets/video/entertainer-night-drive-poster.jpg",
+  width: 960,
+  height: 540,
+  kicker: "Visuals",
+  title: "After Dark",
+  label: "Short silent film: a night city skyline, then The Chef driving through the city at night",
+};

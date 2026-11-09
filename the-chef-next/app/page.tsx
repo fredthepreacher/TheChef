@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import SplitStage from "@/components/SplitStage";
+import { THANKSGIVING } from "@/data/thanksgiving";
+import { PRIVACY_NOTICE_APPROVED } from "@/data/launch";
+import { visibleUnlessDraftInProduction } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: { absolute: "The Chef | Luxury Catering & Entertainment — One Name, Two Crafts" },
@@ -9,5 +12,12 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <SplitStage />;
+  return (
+    <SplitStage
+      seasonal={{
+        thanksgiving: visibleUnlessDraftInProduction(THANKSGIVING.approved),
+        privacy: visibleUnlessDraftInProduction(PRIVACY_NOTICE_APPROVED),
+      }}
+    />
+  );
 }

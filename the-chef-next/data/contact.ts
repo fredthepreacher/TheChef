@@ -3,10 +3,13 @@
  *
  * - Catering email + phone are the real, verified values (they also appear on
  *   Chef Frankie's printed menus).
- * - Entertainer booking: the old value "cheftherapperr@email.com" was a
- *   placeholder (@email.com is not a real mailbox) and has been removed.
- *   Set ENTERTAINER_BOOKING to the owner-approved route to show the
- *   "Booking & Features" section. Until then it stays hidden — never invent one.
+ * - Entertainer booking: "cheftherapperr@email.com" is carried over from the
+ *   previous site (the agency HTML drafts v9–v26). It is UNVERIFIED — nobody
+ *   has confirmed Chef controls this mailbox. (@email.com is a real free-mail
+ *   domain run by mail.com, so the address can exist; an earlier note here
+ *   wrongly called it a placeholder.) The handle still says "rapper" while the
+ *   public brand is now "Entertainer". Replace it only with an address Chef
+ *   supplies — never invent one. Set to `null` to hide the booking section.
  */
 
 export const CATERING_EMAIL = "Thechefcs@gmail.com";
@@ -16,8 +19,8 @@ export const CHEF_NAME = "Chef Frankie";
 
 export type BookingRoute = { email?: string; phone?: string; phoneDisplay?: string };
 
-/** Owner-approved Entertainer booking contact. `null` = not supplied yet. */
-export const ENTERTAINER_BOOKING: BookingRoute | null = null;
+/** Entertainer booking contact (see the note above — pending Chef's confirmation). */
+export const ENTERTAINER_BOOKING: BookingRoute | null = { email: "cheftherapperr@email.com" };
 
 export const BRAND = {
   catering: "The Chef Catering",

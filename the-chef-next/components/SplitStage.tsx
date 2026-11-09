@@ -7,6 +7,9 @@ import SplitHandle from "./SplitHandle";
 
 type Side = "chef" | "rapper" | "";
 
+/** Owner-gated extras, decided on the server (lib/site.ts). */
+export type Seasonal = { thanksgiving: boolean; privacy: boolean };
+
 /**
  * The cinematic split-screen experience — React port of the original
  * script.js drag / lock / unlock logic. Preserves the exact CSS-variable
@@ -14,7 +17,7 @@ type Side = "chef" | "rapper" | "";
  * body classes (is-locked, locked-chef, locked-rapper) so the original
  * stylesheet works unchanged.
  */
-export default function SplitStage() {
+export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
   const stageRef = useRef<HTMLElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const chefHeroRef = useRef<HTMLDivElement>(null);
@@ -186,7 +189,7 @@ export default function SplitStage() {
 
   return (
     <main id="stage" className="stage" ref={stageRef}>
-      <CatererWorld navVisible={chefNavVisible} />
+      <CatererWorld navVisible={chefNavVisible} seasonal={seasonal} />
       <RapperWorld navVisible={rapNavVisible} />
 
       {/* CENTER SPLIT LABELS */}

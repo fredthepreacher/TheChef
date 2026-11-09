@@ -194,10 +194,9 @@ export type Package = {
 };
 
 /**
- * Package cards from the previous site. NOT shown at launch
- * (data/launch.ts → SHOW_PACKAGE_PRICING = false): no supplied source confirms
- * these tiers or prices. Kept so the CRM can still read package snapshots on
- * older leads and so they can be re-enabled once Chef confirms them.
+ * Package cards from the previous site, shown while
+ * data/launch.ts → SHOW_PACKAGE_PRICING is true (see the provenance note
+ * there). The CRM snapshots the chosen card onto the lead at intake.
  */
 export const packages: Package[] = [
   {

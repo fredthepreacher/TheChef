@@ -1,8 +1,10 @@
 import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { composeMenuNotes, inquirySchema } from "@/lib/crm/domain";
+import { inquirySchema } from "@/lib/crm/domain";
 import { intakeClient } from "@/lib/supabase/intake";
-import { packages } from "@/data/menu";
+import { THANKSGIVING } from "@/data/thanksgiving";
+import { prepareInquiry } from "@/lib/catering/prepare-inquiry";
+import { visibleUnlessDraftInProduction } from "@/lib/site";
 export const runtime = "nodejs";
 const TURNSTILE_ALWAYS_PASS_TEST_SECRET =
   "1x0000000000000000000000000000000AA";
@@ -101,12 +103,10 @@ export async function POST(request: NextRequest) {
   const { turnstile_token, website, ...fields } = parsed.data;
   void turnstile_token;
   void website;
-  // Website menu selections ride along in menu_notes so they reach the event
-  // menu workspace through the existing hosted pipeline (see composeMenuNotes).
-  const inquiry = {
-    ...fields,
-    menu_notes: composeMenuNotes(fields.selected_menu_items, fields.menu_notes),
-  };
+  // Menu picks / feast order → menu_notes + package snapshot (see prepareInquiry).
+  const { inquiry, snapshot, feast } = prepareInquiry(fields);
+  if (feast && !visibleUnlessDraftInProduction(THANKSGIVING.approved))
+    return reply("Thanksgiving orders are not open yet. Please call Chef directly.", 400);
   const hash = (value: string) =>
     createHmac("sha256", secret).update(value).digest("hex");
   // Vercel overwrites this header. Other hosts share a conservative global limit.
@@ -114,12 +114,6 @@ export async function POST(request: NextRequest) {
     ? request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown"
     : "local-or-self-hosted";
-  const snapshot = packages.find(
-    (p) => p.badge === inquiry.package_interest,
-  ) ?? {
-    badge: inquiry.package_interest,
-    price: { prefix: "Custom", strong: "Pricing" },
-  };
   try {
     const { error } = await intakeClient().rpc("submit_catering_inquiry", {
       p_id: inquiry.request_id,
@@ -141,7 +135,9 @@ export async function POST(request: NextRequest) {
         503,
       );
     return reply(
-      "Your request is in. Chef Frankie will review availability, confirm your selections and send your custom quote. Your date is not reserved until your quote is approved and the required deposit is paid.",
+      feast
+        ? "Your Thanksgiving order request is in. Chef Frankie will confirm availability, your sides and pies, and the details with you. Your feast is not reserved until Chef confirms your order."
+        : "Your request is in. Chef Frankie will review availability, confirm your selections and send your custom quote. Your date is not reserved until your quote is approved and the required deposit is paid.",
       201,
     );
   } catch {

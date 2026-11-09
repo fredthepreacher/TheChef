@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./launch.css";
 import "./refine.css";
+import "./season.css";
+import Analytics from "@/components/Analytics";
 import { CATERING_EMAIL } from "@/data/contact";
 import { SITE_INDEXABLE, SITE_URL } from "@/lib/site";
 
@@ -10,6 +12,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   // Previews / branch deployments / local builds are never indexed.
   robots: SITE_INDEXABLE ? { index: true, follow: true } : { index: false, follow: false },
+  // Search Console ownership (meta-tag method) — renders nothing when unset.
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   title: {
     default: "The Chef | Luxury Catering & Entertainment",
     template: "%s | The Chef",
@@ -86,7 +92,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

@@ -8,9 +8,14 @@
  */
 
 /** Silver / Gold / Platinum cards and their "Starting at $…" prices.
- *  Neither printed menu (menu_full_doc.jpg, menu_family_doc.png) lists these
- *  tiers or prices, and real quotes are custom/negotiated. */
-export const SHOW_PACKAGE_PRICING = false;
+ *  ON since 2026-11-09 by owner direction ("preserve these unless a newer
+ *  client-approved source exists"). Provenance: the tiers and prices come
+ *  from the previous site (agency HTML drafts). Silver's $800 matches the
+ *  older client family menu (public/assets/family_menu.jpg, "PRICE: $800.00");
+ *  Gold's $1,500 has no client document. The current printed menu says
+ *  "Pricing subject to change", so every card stays "Starting at" and
+ *  quote-driven. Chef must still confirm before the production launch. */
+export const SHOW_PACKAGE_PRICING = true;
 
 /** "200+ events · 5★ · 8+ years · 12 dishes" (catering) and
  *  "50K+ streams · 12+ tracks · 30+ shows · 3 projects" (music).
@@ -34,5 +39,10 @@ export type Show = {
   ticketUrl?: string;
 };
 
-/** Real, confirmed upcoming performances only. Empty → the section is hidden. */
+/** Draft privacy notice (/privacy). Required before any ad measurement
+ *  (NEXT_PUBLIC_GTM_ID) is switched on. Previews show it with a draft
+ *  banner; production 404s until the owner approves the wording. */
+export const PRIVACY_NOTICE_APPROVED = false;
+
+/** Real, confirmed upcoming performances only. Empty → an "announced soon" state. */
 export const UPCOMING_SHOWS: Show[] = [];

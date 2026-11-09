@@ -4,6 +4,7 @@ import {
   catalogKeys,
   groupSelection,
 } from "@/lib/catering/menu-catalog";
+import { THANKSGIVING, feastById, type Feast } from "@/data/thanksgiving";
 
 export const stages = [
   "new_inquiry",
@@ -25,7 +26,17 @@ export const packageOptions = [
   "Gold",
   "Platinum",
   "Custom",
+  // Seasonal (data/thanksgiving.ts). leads.package_interest is free text in
+  // the database, so new values need no migration.
+  "Thanksgiving Intimate Feast",
+  "Thanksgiving Family Feast",
+  "Thanksgiving Gathering Feast",
+  "Thanksgiving Grand Feast",
 ] as const;
+// Compile-time guard: every feast maps to a real package option.
+const _feastPackagesAreOptions: readonly (typeof packageOptions)[number][] =
+  THANKSGIVING.feasts.map((f: Feast) => f.packageInterest);
+void _feastPackagesAreOptions;
 export const coiStatuses = [
   "not_required",
   "requirement_unknown",
@@ -87,6 +98,38 @@ export const date = z
       new Date(v).toISOString().slice(0, 10) === v,
     "Enter a valid date",
   );
+/** Thanksgiving order details (data/thanksgiving.ts) — catalog values only. */
+export const thanksgivingOrderSchema = z
+  .object({
+    feast: z.enum(["intimate", "family", "gathering", "grand"]),
+    sides: z.array(z.enum(THANKSGIVING.sides)).max(9).default([]),
+    pies: z.array(z.enum(THANKSGIVING.pies)).max(6).default([]),
+    bread: z.union([z.literal(""), z.enum(THANKSGIVING.breads)]).default(""),
+  })
+  .strict();
+
+const tag = z.string().trim().max(300);
+/**
+ * Ad-click / campaign data captured first-party from the landing URL
+ * (lib/attribution.ts). Stored in leads.inquiry for offline-conversion
+ * uploads later. Never allowed to reject a lead: malformed → dropped.
+ */
+export const attributionSchema = z.object({
+  utm_source: tag.optional(),
+  utm_medium: tag.optional(),
+  utm_campaign: tag.optional(),
+  utm_content: tag.optional(),
+  utm_term: tag.optional(),
+  gclid: tag.optional(),
+  gbraid: tag.optional(),
+  wbraid: tag.optional(),
+  fbclid: tag.optional(),
+  fbc: tag.optional(),
+  fbp: tag.optional(),
+  landing_path: tag.optional(),
+  captured_at: z.string().max(40).optional(),
+});
+
 export const inquirySchema = z
   .object({
     request_id: z.uuid(),
@@ -139,8 +182,30 @@ export const inquirySchema = z
     consent: z.literal(true),
     website: z.string().max(0).default(""),
     turnstile_token: z.string().max(2048).default(""),
+    thanksgiving: thanksgivingOrderSchema.optional(),
+    attribution: attributionSchema.optional().catch(undefined),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    const feast = v.thanksgiving && feastById(v.thanksgiving.feast);
+    const seasonal = v.package_interest.startsWith("Thanksgiving ");
+    if (!v.thanksgiving) {
+      if (seasonal)
+        ctx.addIssue({ code: "custom", message: "Choose your feast", path: ["thanksgiving"] });
+      return;
+    }
+    if (!feast || feast.packageInterest !== v.package_interest)
+      ctx.addIssue({ code: "custom", message: "Feast mismatch", path: ["package_interest"] });
+    else {
+      const { sides, pies } = v.thanksgiving;
+      if (sides.length > feast.sides || new Set(sides).size !== sides.length)
+        ctx.addIssue({ code: "custom", message: `Choose up to ${feast.sides} sides`, path: ["thanksgiving", "sides"] });
+      if (pies.length > feast.pies || new Set(pies).size !== pies.length)
+        ctx.addIssue({ code: "custom", message: `Choose up to ${feast.pies} pies`, path: ["thanksgiving", "pies"] });
+    }
+    if (v.selected_menu_items.length)
+      ctx.addIssue({ code: "custom", message: "Feast orders use the Thanksgiving menu", path: ["selected_menu_items"] });
+  });
 export type Inquiry = z.infer<typeof inquirySchema>;
 
 /**

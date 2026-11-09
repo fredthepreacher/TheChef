@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import CurrentYear from "@/components/CurrentYear";
 import {
   heroImage,
   foodHero,
@@ -207,7 +208,7 @@ export default function GalleryGrid() {
 
       <footer className="gallery-footer">
         <span className="footer-logo-text">{BRAND.cateringFull}</span>
-        <span className="footer-copy">© 2025 The Chef Catering Services · Five Star Meals on Wheels · All Rights Reserved</span>
+        <span className="footer-copy">© <CurrentYear /> The Chef Catering Services · Five Star Meals on Wheels · All Rights Reserved</span>
       </footer>
 
       {/* LIGHTBOX */}

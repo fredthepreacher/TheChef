@@ -4,6 +4,7 @@ import { ENTERTAINER_BOOKING, mailto, tel } from "@/data/contact";
 import { SHOW_UNVERIFIED_STATS, UPCOMING_SHOWS } from "@/data/launch";
 import CurrentYear from "./CurrentYear";
 import EntertainerHeroVideo from "./EntertainerHeroVideo";
+import EntertainerFilm from "./EntertainerFilm";
 import MusicSection from "./MusicSection";
 
 /** Format an ISO date ("2026-12-31") as { day: "Dec 31", year: "2026" } without timezone drift. */
@@ -29,7 +30,7 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
           <span className="nav-logo">The Chef</span>
           <a className="nav-link" href="#rapper-about">About</a>
           <a className="nav-link" href="#rapper-music">Music</a>
-          {hasShows && <a className="nav-link" href="#rapper-shows">Shows</a>}
+          <a className="nav-link" href="#rapper-shows">Shows</a>
           <a
             className="nav-link btn-primary"
             href={booking ? "#rapper-contact" : "#rapper-music"}
@@ -112,14 +113,18 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
           </div>
         </section>
 
+        {/* VISUALS — one cinematic, silent, lazy-loaded film band (data/media.ts) */}
+        <EntertainerFilm />
+
         {/* MUSIC — featured upcoming album + playable singles */}
         <MusicSection />
 
-        {/* SHOWS — only real, confirmed dates (data/launch.ts → UPCOMING_SHOWS) */}
-        {hasShows && (
-          <section className="section" id="rapper-shows">
-            <p className="section-tag">Live Performances</p>
-            <h2 className="section-title">Upcoming Shows</h2>
+        {/* SHOWS — only real, confirmed dates (data/launch.ts → UPCOMING_SHOWS).
+            With none confirmed, an honest "announced soon" state — never placeholder rows. */}
+        <section className="section" id="rapper-shows">
+          <p className="section-tag">Live Performances</p>
+          <h2 className="section-title">Upcoming Shows</h2>
+          {hasShows ? (
             <div className="shows-list">
               {UPCOMING_SHOWS.map((s) => {
                 const d = showDate(s.date);
@@ -139,8 +144,21 @@ export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
                 );
               })}
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="shows-soon">
+              <span className="shows-soon-rule" aria-hidden="true" />
+              <p className="shows-soon-title">Upcoming dates will be announced soon.</p>
+              <p className="shows-soon-sub">
+                {booking
+                  ? "Want The Chef on your stage, at your venue or at your private event? Booking is open now."
+                  : "In the meantime, the music is playing — start with the album preview above."}
+              </p>
+              <a className="btn-ghost shows-soon-cta" href={booking ? "#rapper-contact" : "#rapper-music"}>
+                {booking ? "Book The Entertainer" : "Listen Now"}
+              </a>
+            </div>
+          )}
+        </section>
 
         {/* BOOKING — only when the owner has approved a real contact route */}
         {booking && (
