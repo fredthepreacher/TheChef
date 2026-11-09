@@ -31,6 +31,6 @@ test("fixed consent modes", () => {
 });
 
 test("tracking never runs on operator, proposal or API paths", () => {
-  for (const p of ["/crm", "/crm/leads/1", "/proposal/abc123", "/api/catering/inquiries"]) assert.equal(isUntrackedPath(p), true, p);
-  for (const p of ["/", "/thanksgiving", "/catering/inquiry", "/crmx", "/proposals-info"]) assert.equal(isUntrackedPath(p), false, p);
+  for (const p of ["/crm", "/crm/leads/1", "/proposal/abc123", "/payment/success", "/payment/cancelled", "/api/catering/inquiries"]) assert.equal(isUntrackedPath(p), true, p);
+  for (const p of ["/", "/thanksgiving", "/catering/inquiry", "/crmx", "/proposals-info", "/payments-info"]) assert.equal(isUntrackedPath(p), false, p);
 });

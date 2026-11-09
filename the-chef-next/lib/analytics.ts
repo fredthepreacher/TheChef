@@ -29,9 +29,9 @@
  *                    lead) for de-duplication with server-side events later.
  *                    value/currency only for priced Thanksgiving feasts.
  *   click_to_call  { link_page } → any tel: link click
- * Plus GTM's own page_view/history events. Never loaded on /crm, /proposal or
- * /api: operator screens and private proposal links (their URLs carry access
- * tokens) must not reach ad platforms.
+ * Plus GTM's own page_view/history events. Never loaded on /crm, /proposal,
+ * /payment or /api: operator screens, private proposal links (their URLs carry
+ * access tokens) and the Stripe return pages must not reach ad platforms.
  */
 
 declare global {
@@ -78,8 +78,9 @@ export function consentBootstrap(mode: typeof CONSENT_DEFAULT): string {
   return lines.join("");
 }
 
-/** Paths that must never load or receive tracking. */
-export const isUntrackedPath = (path: string) => /^\/(crm|proposal|api)(\/|$)/.test(path);
+/** Paths that must never load or receive tracking. /payment carries Stripe
+ *  Checkout session IDs back from a private proposal. */
+export const isUntrackedPath = (path: string) => /^\/(crm|proposal|payment|api)(\/|$)/.test(path);
 
 function push(event: string, params: Record<string, string | number | undefined>) {
   if (!ANALYTICS_ENABLED || typeof window === "undefined") return;

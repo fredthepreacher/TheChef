@@ -10,7 +10,7 @@ import { acceptProposal, respondToProposal } from "./actions";
 import "@/app/crm/crm.css";
 
 export const metadata: Metadata = {
-  title: "Catering proposal | The Chef",
+  title: "Catering proposal",
   robots: { index: false, follow: false, nocache: true },
 };
 export const dynamic = "force-dynamic";
