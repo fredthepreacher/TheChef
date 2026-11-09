@@ -33,12 +33,13 @@ test(
         assert.ok(!html.includes('href="/crm'));
         const inquiry = await fetch(`${origin}/catering/inquiry?package=Gold`);
         assert.equal(inquiry.status, 200);
-        assert.match(await inquiry.text(), /Send catering inquiry/);
+        assert.match(await inquiry.text(), /Send My Event Request/);
       },
     );
     await t.test("robots excludes private routes", async () => {
       const response = await fetch(`${origin}/robots.txt`);
-      assert.match(await response.text(), /Disallow: \/crm/);
+      // Indexable production lists /crm and /api/; every other host disallows all.
+      assert.match(await response.text(), /Disallow: \/(crm)?$/m);
     });
     await t.test("intake fails closed before configured", async () => {
       const response = await fetch(`${origin}/api/catering/inquiries`, {
