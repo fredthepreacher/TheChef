@@ -1,16 +1,16 @@
 # Phase 3 Revenue Operations Report
 
-**Status (reconciled 2026-11-08 ~14:45 local):**
+**Status (updated 2026-11-08 ~19:45 local, ET):**
 - Local verification passes at commit `e4f14ab`.
 - Hosted database acceptance passes (39/39).
 - The provider-independent **core** UI path passes: inquiry → lead → event → quote → proposal → acceptance → deposit-pending → ledger → revenue → communications (Codex run).
-- **Two hosted UI defects block the revision and response paths:**
-  - D-1: a revision can never be issued.
-  - D-2: a client cannot send a revision request or decline that includes a message.
-  - **Fix written and locally tested (2026-11-08):** migration `20261108212749_phase3_proposal_revision_fixes.sql` plus regression test `tests/proposal-revisions.test.ts`. It is **NOT yet applied to hosted** (Chef project paused; apply needs owner approval).
+- **Hosted UI defects D-1 and D-2 are fixed and re-verified on hosted.**
+  - D-1: a revision could never be issued.
+  - D-2: a client could not send a revision request or decline that included a message.
+  - With owner approval, migration `20261108212749_phase3_proposal_revision_fixes.sql` was applied at **00:08:48 UTC on 2026-11-09** (19:08:48 ET on 2026-11-08). The hosted UI journey then passed: revise with a message → issue v2 → decline with a message → issue v3 → accept → deposit-pending, plus the new Client responses panel. See "Hosted re-test of the D-1/D-2 fix" below.
 - **Stripe test mode, Resend and AI Gateway are PENDING owner configuration.** They are not failed; credentials and decisions have not been supplied.
 - Phase 3 is **NOT HOSTED PASSED**.  
-**Account scope: temporary swap reversed.** On 2026-11-08 `the-chef-catering-crm` was paused (INACTIVE 14:39:57 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 14:44:31 local**). Wavy Sites was smoke-tested: `/api/health` returned `{"ok":true}`, and one labelled `/start` lead was stored with its alert sent. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
+**Account scope: second swap reversed.** The free slot was swapped twice on 2026-11-08, both times with owner approval. After the second window, `the-chef-catering-crm` was paused (INACTIVE 19:36:26 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 19:41:04 local**). Wavy Sites was smoke-tested again: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST 2 — Claude (please delete)` stored at 19:41:54 (`form=project`, `status=new`, no spam flags) with its alert email sent on attempt 1. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
 **Date:** 2026-11-08  
 **Branch:** `feat/catering-crm-revenue-ops`  
 **Approved Phase 2 base:** `2164ce326d9658c17dcb07cebc96543ce40448aa`  
@@ -36,7 +36,7 @@ Phase 3 is represented by:
 - `20261108165321_phase3_revenue_hardening.sql` — additive corrections for Stripe amount/currency verification, authenticated manual-payment attribution, approval-gated lifecycle defaults, and upcoming-event reminders.
 - `20261108183134_phase3_fk_indexes.sql` — additive indexes for all 15 Phase 3 foreign-key columns identified by the hosted performance advisor.
 - `20261108191500_stripe_async_checkout_events.sql` — additive support for delayed-payment Checkout success/failure webhooks while retaining the existing signature, amount, currency, unknown-session, and duplicate-event gates.
-- `20261108212749_phase3_proposal_revision_fixes.sql` — fixes D-1 and D-2. `prepare_and_issue_proposal` reuses the event's agreement and appends the next agreement version (it refuses if an agreement was already accepted). `respond_to_proposal_by_token` changes only the issued version's status and stores the client's message on `crm_private.proposal_access_events.message`. New operator-only `list_proposal_responses(quote_id)` (SECURITY DEFINER, `search_path=''`, `is_operator()` check, no `anon` grant) feeds a "Client responses" panel on the CRM quote page. **Local only; not applied to hosted.**
+- `20261108212749_phase3_proposal_revision_fixes.sql` — fixes D-1 and D-2. `prepare_and_issue_proposal` reuses the event's agreement and appends the next agreement version (it refuses if an agreement was already accepted). `respond_to_proposal_by_token` changes only the issued version's status and stores the client's message on `crm_private.proposal_access_events.message`. New operator-only `list_proposal_responses(quote_id)` (SECURITY DEFINER, `search_path=''`, `is_operator()` check, no `anon` grant) feeds a "Client responses" panel on the CRM quote page. **Applied to hosted 2026-11-09 00:08:48 UTC and re-verified there.**
 
 The primary Phase 3 migration was previously applied to the Chef hosted project. It has not been edited in place since that hosted application. The hardening migration passed the local migration suite and was **applied to hosted on 2026-11-08 at 17:36:40 UTC**, after a dry-run confirmed it was the only pending migration and the owner explicitly approved the push. Later dry-runs showed only the new foreign-key-index migration and then only the Stripe asynchronous-event migration; each was applied alone. Local/remote history now matches across all seven canonical versions.
 
@@ -141,6 +141,18 @@ The account allows two active Free projects. With explicit owner authorization f
 | ~14:40 | Resumed `wavysites-web` from the dashboard | `COMING_UP` → `RESTORING` |
 | 14:44:31 | — | `wavysites-web` **ACTIVE_HEALTHY** |
 | 14:47:59 | Wavy Sites smoke test: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST — Claude (please delete)` stored (`form=project`, `status=new`, no spam flags) and its alert email sent on attempt 1 | PASS |
+| **Second window** (owner approved "Yes, apply it" for the D-1/D-2 fix) | | |
+| ~19:02 | Paused `wavysites-web` from the dashboard | `PAUSING` (19:02:05) |
+| 19:03:12 | — | `wavysites-web` **INACTIVE** |
+| ~19:04 | Resumed `the-chef-catering-crm` from the dashboard | `COMING_UP` (19:04:28) |
+| 19:08:07 | — | Chef project **ACTIVE_HEALTHY** |
+| 19:08:48 | `npx supabase db push --linked --yes` applied `20261108212749` (dry run first listed only that file) | applied |
+| 19:10–19:34 | Hosted UI re-test, Client responses panel check, guarded cleanup | PASS |
+| ~19:35 | Paused `the-chef-catering-crm` from the dashboard | `PAUSING` (19:35:36) |
+| 19:36:26 | — | Chef project **INACTIVE** |
+| ~19:37 | Resumed `wavysites-web` from the dashboard | `COMING_UP` |
+| 19:41:04 | — | `wavysites-web` **ACTIVE_HEALTHY** |
+| after 19:41:04 | Wavy Sites smoke test: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST 2 — Claude (please delete)` stored at 19:41:54 (`form=project`, `status=new`, no spam flags) with its alert email sent on attempt 1 | PASS |
 
 No other project was touched. `wavy crm`, `wavy-rewards-staging`, `DayKare` and `Vertical Ops CRM` remain paused; `geos-ventures's Project` (separate client organization) remains active and untouched.
 
@@ -152,7 +164,7 @@ Claude followed the second instruction at 14:38–14:48 (rows above), because D-
 
 To continue hosted Phase 3 work, resume the Chef project. That needs a free slot: pause `wavysites-web` again, or approve a paid plan.
 
-Wavy Sites had no database from 12:16 to 14:44 local. `wavysites-web` holds 0 leads apart from the smoke test, so nothing was stored during the pause, and any `/start` submissions in that window failed.
+Wavy Sites had no database from 12:16 to 14:44 local, and again from 19:03 to 19:41:04 local. Any `/start` submissions in those windows failed.
 
 ### Migration state
 
@@ -163,7 +175,8 @@ Wavy Sites had no database from 12:16 to 14:44 local. `wavysites-web` holds 0 le
   - `process_stripe_checkout_event` has only the 6-argument signature, with **no amount/currency verification**.
   - `crm_private.prepare_payment_transaction` does **not** require `recorded_by = auth.uid()`, so an operator could attribute a manual payment to another operator.
   - 5 automation rules exist, 0 are active, so no upcoming-event reminder is scheduled after booking.
-- What the migration wrote to hosted data: 6 `activity_log` rows at 17:36:40 UTC with no user actor. Five existing lifecycle rules were activated, and `Upcoming event reminder` (`event_booked` → `draft_upcoming_event_reminder`) was inserted. All 6 rules are active, and **all 6 have `requires_operator_approval = true`**.
+- **2026-11-09 00:08:48 UTC:** after the dry run listed only `20261108212749_phase3_proposal_revision_fixes.sql`, it was applied with owner approval. `npx supabase migration list --linked` shows all **8** migrations matching local and remote. It wrote no data rows (audit count stayed at 17).
+- What the hardening migration wrote to hosted data: 6 `activity_log` rows at 17:36:40 UTC with no user actor. Five existing lifecycle rules were activated, and `Upcoming event reminder` (`event_booked` → `draft_upcoming_event_reminder`) was inserted. All 6 rules are active, and **all 6 have `requires_operator_approval = true`**.
 
 ### Hosted schema, RLS, Storage, Auth and health (read-only)
 
@@ -355,12 +368,63 @@ Test data:
 
 With the migration temporarily removed, the same test fails with the hosted error (`Issued quote versions are immutable`). Full suite at the fix: typecheck, lint, **28 passed / 1 credential-gated skip**, Next.js production build (16 routes), `npm audit` 0 vulnerabilities, secret scan clean.
 
+### Hosted re-test of the D-1/D-2 fix (Claude, 2026-11-08 19:08–19:34 local)
+
+**Post-apply checks (hosted catalog):**
+- `crm_private.proposal_access_events.message` exists.
+- `list_proposal_responses` is SECURITY DEFINER with `search_path=""`.
+- Execute grants:
+  - `anon` can execute **none** of `list_proposal_responses`, `respond_to_proposal_by_token` or `prepare_and_issue_proposal`.
+  - `authenticated` can execute `list_proposal_responses` and `prepare_and_issue_proposal`, but **not** `respond_to_proposal_by_token`, which is service-role only.
+- Advisors:
+  - Security: 10 WARN `authenticated_security_definer_function_executable`. The only new one is `list_proposal_responses`, the same accepted pattern as the 9 existing operator RPCs (each checks `is_operator()`).
+  - Security: 1 WARN `auth_leaked_password_protection` (unchanged).
+  - Performance: no findings.
+
+**UI journey.**
+- **Setup:**
+  - Test data: one labelled test lead (`UI revision re-test (please ignore)`, `chef-ui-acceptance-20261108b@example.invalid`), created through the same `submit_catering_inquiry` RPC the public form uses.
+  - Host for operator and client steps: the stable alias, using the owner's existing session. It serves `dpl_6Wqq5…` (`39b4959`), and the fix is entirely in the database, so that build exercises it. The alias was **not** changed.
+  - Panel step: run on the branch preview built from `9680a42` (`dpl_ADB7VW5R…`) after the owner signed in there.
+- **Email:** the email-queue box was left unchecked on every issue, and no email provider is configured.
+
+| Step | Result |
+|---|---|
+| Lead → event, quote #5 v1 (60 × $25.00 = **$1,500.00**, 25% deposit **$375.00**), lock and issue | PASS |
+| Client: request revision **with a message** | **PASS (D-2 fixed)**: "Your response has been recorded"; quote shows *Revision Requested* |
+| Create revision v2 (+ dessert station 60 × $2.50 → **$1,650.00**, deposit **$412.50**), lock and issue | **PASS (D-1 fixed)**: issued, status *Sent* |
+| Old v1 link | PASS: 404, no accept/respond controls |
+| Client: decline v2 **with a message** | **PASS (D-2 fixed)**: recorded; lead → *Lost* with lost reason = the client's message |
+| Create revision v3, lock and issue (third issue on the same event) | PASS: *Sent* |
+| Client: accept v3 (typed name + consent) | PASS: "Your electronic acceptance has been recorded" |
+| CRM after acceptance | PASS: v3 *Approved*, no revise/revoke controls; event *Approved Deposit Pending*; lead `awaiting_deposit`; Revenue shows Quoted/Approved/Outstanding **$1,650.00**, 1 awaiting deposit |
+| Database state | PASS: **1** agreement, versions `1:superseded, 2:superseded, 3:accepted`; `client_notes` on all issued versions unchanged (`''`); `event_financials.commercial_status = approved_deposit_pending` |
+| `list_proposal_responses` as the owner identity | PASS: 3 rows: v1 revision requested and v2 declined, each with its message; v3 accepted with no message |
+| **Client responses panel** (branch preview, `9680a42`) | PASS: lists v3 Accepted / "No message", v2 Declined with the quoted message, v1 Revision Requested with the quoted message, newest first |
+
+**Re-test cleanup (permanent, guarded):**
+- One transaction resolved every ID from the test client.
+- It aborted on any unexpected state: more than one client, payment rows, AI or document rows, or Storage objects.
+- It removed:
+  - the client, lead and event, with the event's menu and tasks
+  - quote #5, its 3 versions and its line items
+  - the agreement, its 3 versions and the financial row
+  - 3 proposal tokens and their access events
+  - the scheduled actions
+  - the queued acknowledgment communication and its outbox row (never sent)
+  - the stored request, the rate-limit rows and the related audit rows
+- Post-check: **0** rows in every CRM, revenue, proposal, scheduling, outbox, request and rate-limit table; **17** audit rows; 1 profile; 1 auth user; 0 Storage objects.
+- The quote-number identity is now at 5, so the next real quote will be #6.
+- The test proposal links stored in the browser were removed.
+
 **Smaller observations (non-blocking):**
 - The event readiness card still says "Deposit / payment: Not tracked in Phase 2".
 - The communications header says "Rules begin disabled" while all six are enabled.
 - The proposal page still shows Accept / Revise / Decline after a response has been recorded.
 - After `checkout.session.async_payment_failed`, the payment request stays `open` until the next checkout cancels it. This is safe, but it could be marked `cancelled` for clarity.
 - `APP_ORIGIN` is a single Preview value (the stable alias), so a proposal link generated on any other preview URL points at the stable alias host.
+- When a later version is issued, the earlier version's status becomes `superseded`, which replaces `declined` or `revision_requested`. The client's response still survives in the access-event log, the Client responses panel and the lead's lost reason.
+- Most CRM pages format times with `toLocaleString()` on the server, which renders **UTC** on Vercel. The Activity panel uses Eastern time with an "ET" suffix. The Client responses panel now matches Activity. The other pages are unchanged and should get one shared formatter once the owner confirms Chef's time zone.
 
 **Cleanup (permanent, guarded):**
 - One transaction removed exactly the test client, lead, event, working menu, 6 tasks, quote #4, v1/v2, 3 line items, agreement and version, proposal token and access events, scheduled action, communication and outbox row, stored request, 3 rate-limit rows (`ip:`/`email:` seed keys and one `proposal:` key), and the related audit rows.
@@ -380,12 +444,7 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 1. ~~Apply the hardening migration and re-run E1, E4 and F1–F4~~: **done** (2026-11-08, all pass).
 2. ~~Preview connection and real test inquiry~~: **done** (2026-11-08).
 3. ~~Core provider-independent UI path~~: **done** (Codex run).
-4. **Apply the D-1/D-2 fix to hosted.** It is written and tested locally (`20261108212749`). Steps:
-   1. With owner approval, swap the free slot again (pause `wavysites-web`, resume the Chef project).
-   2. Run `npx supabase db push --linked --dry-run`; expect only `20261108212749`.
-   3. Apply it with owner approval.
-   4. Re-run hosted UI: request revision with a message, issue v2, decline with a message, issue v3, accept to deposit-pending, and check the Client responses panel.
-   5. Clean up and swap back.
+4. ~~Apply the D-1/D-2 fix to hosted and re-run the revision/response journey~~: **done** (2026-11-08 19:08–19:34 local, all pass).
 5. **Stripe test mode**: PENDING owner configuration (test/restricted key + webhook secret in Preview only).
 6. **Resend**: PENDING owner configuration (Chef-owned sending domain, From/Reply-To, DNS). Also requires the Chef new-inquiry notification below.
 7. **AI Gateway**: PENDING (optional, draft-only, ≤ $5/month).
@@ -502,13 +561,13 @@ The unrelated `Claude outputs/` directory is outside the nested application and 
 **Phase 3 is NOT HOSTED PASSED.**
 
 Green:
-- local verification at `e4f14ab`
+- local verification at `e4f14ab`, and again at the fix commits
 - hosted database acceptance
 - preview → Supabase intake
 - the core UI path
+- the revision/decline/request-revision paths, after the D-1/D-2 fix was applied to hosted
 
 Blocking:
-- **D-1** (revisions cannot be issued) and **D-2** (client messages break revise/decline). A fix is written and passes locally (`20261108212749` + `tests/proposal-revisions.test.ts`); it is **not yet applied or re-verified on hosted**.
 - Stripe test mode, Resend (including the missing Chef new-inquiry notification) and AI Gateway are **pending owner configuration**, not failed.
 
 Phase 4 has not begun. `main` and the production domain are untouched.

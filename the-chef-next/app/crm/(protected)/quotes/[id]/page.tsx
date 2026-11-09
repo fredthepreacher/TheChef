@@ -161,7 +161,7 @@ export default async function QuoteDetailPage({ params, searchParams }: {
             <div className="crm-record-row" key={`${response.version}-${response.action}-${response.created_at}`}>
               <span>
                 <strong>Version {response.version} · {label(response.action)}</strong>
-                <small>{new Date(response.created_at).toLocaleString()}</small>
+                <small>{new Date(response.created_at).toLocaleString("en-US", { timeZone: "America/New_York" })} ET</small>
                 {response.message
                   ? <span style={{ whiteSpace: "pre-line" }}>“{response.message}”</span>
                   : <small>No message</small>}
