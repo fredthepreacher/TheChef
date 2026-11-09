@@ -44,8 +44,9 @@ export const THANKSGIVING = {
   dayISO: "2026-11-26",
   /** "Order by Nov 20" from the client's cards. */
   orderByISO: "2026-11-20",
-  /** The cards advertise "FREE PIE!" but every feast already includes pies.
-   *  Stays unpublished until Chef defines the terms (extra pie? which feasts?). */
+  /** Chef's original cards said "FREE PIE!" (undefined terms; every feast
+   *  already includes pies). The final ad creative dropped it (Nov 9), so this
+   *  stays null and the site makes no free-pie claim unless Chef defines one. */
   freePieTerms: null as string | null,
   /** Pickup / delivery / service area — unknown, so nothing is promised. */
   fulfilmentNote: null as string | null,
