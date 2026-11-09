@@ -5,6 +5,42 @@ import { requireOperator } from "@/lib/auth/require-operator";
 import { stages, label, type Lead } from "@/lib/crm/domain";
 import { updateStage, convertLead, createQuote } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
+
+/** One inquiry value: lists, nested objects (Thanksgiving order, ad attribution) or text. */
+function InquiryValue({ value }: { value: unknown }) {
+  if (Array.isArray(value))
+    return value.length ? (
+      <ul className="crm-inline-list">
+        {value.map((item) => (
+          <li key={String(item)}>{String(item)}</li>
+        ))}
+      </ul>
+    ) : (
+      <>None selected</>
+    );
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && !v.length),
+    );
+    return entries.length ? (
+      <ul className="crm-inline-list">
+        {entries.map(([k, v]) => (
+          <li key={k}>
+            {label(k)}: {Array.isArray(v) ? v.map(String).join(", ") : String(v)}
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <>Not provided</>
+    );
+  }
+  return (
+    <span style={{ whiteSpace: "pre-line" }}>
+      {String(value ?? "") || "Not provided"}
+    </span>
+  );
+}
+
 export default async function LeadDetail({
   params,
   searchParams,
@@ -111,21 +147,7 @@ export default async function LeadDetail({
                 <div key={k}>
                   <dt>{label(k)}</dt>
                   <dd>
-                    {Array.isArray(v) ? (
-                      v.length ? (
-                        <ul className="crm-inline-list">
-                          {v.map((item) => (
-                            <li key={String(item)}>{String(item)}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        "None selected"
-                      )
-                    ) : (
-                      <span style={{ whiteSpace: "pre-line" }}>
-                        {String(v) || "Not provided"}
-                      </span>
-                    )}
+                    <InquiryValue value={v} />
                   </dd>
                 </div>
               ))}
