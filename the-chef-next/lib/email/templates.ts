@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { EmailMessage } from "@/lib/email/provider";
+import { crmLeadUrl } from "@/lib/email/owner-notification";
 
 export const inquiryAcknowledgmentData = z.object({
   first_name: z.string().trim().min(1).max(200),
@@ -73,6 +74,84 @@ export function renderCateringProposal(
   };
 }
 
+const optionalText = z
+  .string()
+  .trim()
+  .max(500)
+  .nullish()
+  .transform((value) => value || null);
+
+export const ownerInquiryNotificationData = z.object({
+  lead_id: z.uuid(),
+  first_name: z.string().trim().min(1).max(200),
+  last_name: optionalText,
+  email: z.string().trim().min(3).max(254),
+  phone: optionalText,
+  preferred_contact_method: optionalText,
+  event_type: z.string().trim().min(1).max(200),
+  requested_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  guest_count: z.coerce.number().int().min(1).max(10000),
+  event_location: optionalText,
+  package_interest: optionalText,
+});
+
+/**
+ * Internal alert to Chef for every new website request
+ * (template key `owner_inquiry_notification`). Queued by the 6-argument
+ * submit_catering_inquiry only when CHEF_NOTIFICATION_EMAIL is configured.
+ * Goes to the owner, never to the customer.
+ */
+export function renderOwnerInquiryNotification(
+  recipient: string,
+  idempotencyKey: string,
+  input: unknown,
+  leadUrl?: string | null,
+): EmailMessage {
+  const data = ownerInquiryNotificationData.parse(input);
+  const link = leadUrl === undefined ? crmLeadUrl(data.lead_id) : leadUrl;
+  const date = new Date(`${data.requested_date}T12:00:00Z`).toLocaleDateString(
+    "en-US",
+    { weekday: "short", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" },
+  );
+  const name = [data.first_name, data.last_name].filter(Boolean).join(" ");
+  const rows: [string, string][] = [
+    ["Name", name],
+    ["Email", data.email],
+    ["Phone", data.phone ?? "Not provided"],
+    ["Prefers", data.preferred_contact_method ?? "Not stated"],
+    ["Event", `${data.event_type} on ${date}`],
+    ["Guests", String(data.guest_count)],
+    ["Location", data.event_location ?? "Not provided"],
+    ["Package", data.package_interest ?? "Not selected"],
+  ];
+  const footer =
+    "The customer's automatic acknowledgment is queued separately. Nothing is booked until you confirm.";
+  return {
+    to: recipient,
+    subject: `New catering inquiry: ${name} · ${data.event_type} · ${data.guest_count} guests`.slice(0, 300),
+    idempotencyKey,
+    text: [
+      "New catering request from the website.",
+      "",
+      ...rows.map(([k, v]) => `${k}: ${v}`),
+      "",
+      link ? `Open the lead in the CRM: ${link}` : "Open the CRM → Leads to review it.",
+      "",
+      footer,
+    ].join("\n"),
+    html: `<p>New catering request from the website.</p><table cellpadding="4" style="border-collapse:collapse">${rows
+      .map(
+        ([k, v]) =>
+          `<tr><td style="color:#666;vertical-align:top"><strong>${escapeHtml(k)}</strong></td><td>${escapeHtml(v)}</td></tr>`,
+      )
+      .join("")}</table><p>${
+      link
+        ? `<a href="${escapeHtml(link)}">Open the lead in the CRM</a>`
+        : "Open the CRM → Leads to review it."
+    }</p><p style="color:#666">${escapeHtml(footer)}</p>`,
+  };
+}
+
 export function renderEmailTemplate(
   templateKey: string,
   recipient: string,
@@ -81,6 +160,8 @@ export function renderEmailTemplate(
 ) {
   if (templateKey === "inquiry_acknowledgment")
     return renderInquiryAcknowledgment(recipient, idempotencyKey, input);
+  if (templateKey === "owner_inquiry_notification")
+    return renderOwnerInquiryNotification(recipient, idempotencyKey, input);
   if (templateKey === "catering_proposal")
     return renderCateringProposal(recipient, idempotencyKey, input);
   const lifecycle = z.object({

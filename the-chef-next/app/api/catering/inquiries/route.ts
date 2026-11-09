@@ -5,6 +5,7 @@ import { intakeClient } from "@/lib/supabase/intake";
 import { THANKSGIVING } from "@/data/thanksgiving";
 import { prepareInquiry } from "@/lib/catering/prepare-inquiry";
 import { visibleUnlessDraftInProduction } from "@/lib/site";
+import { ownerNotificationRecipient } from "@/lib/email/owner-notification";
 export const runtime = "nodejs";
 const TURNSTILE_ALWAYS_PASS_TEST_SECRET =
   "1x0000000000000000000000000000000AA";
@@ -115,13 +116,29 @@ export async function POST(request: NextRequest) {
       "unknown"
     : "local-or-self-hosted";
   try {
-    const { error } = await intakeClient().rpc("submit_catering_inquiry", {
+    const client = intakeClient();
+    const args = {
       p_id: inquiry.request_id,
       p_inquiry: inquiry,
       p_snapshot: snapshot,
       p_network_key: `ip:${hash(ip)}`,
       p_email_key: `email:${hash(inquiry.email)}`,
-    });
+    };
+    // Chef's new-inquiry alert is queued in the same transaction, only when
+    // CHEF_NOTIFICATION_EMAIL is configured (6-argument overload).
+    const owner = ownerNotificationRecipient();
+    let { error } = await client.rpc(
+      "submit_catering_inquiry",
+      owner ? { ...args, p_owner_email: owner } : args,
+    );
+    if (owner && error?.code === "PGRST202") {
+      // The overload's migration isn't applied yet: save the inquiry without
+      // the alert rather than turning the customer away.
+      console.error(
+        "Chef inquiry alert skipped: migration 20261109220000_owner_inquiry_notification is not applied.",
+      );
+      ({ error } = await client.rpc("submit_catering_inquiry", args));
+    }
     if (error?.code === "P0003")
       return reply("Too many inquiries. Please try later or call Chef.", 429);
     if (error?.code === "P0002")
