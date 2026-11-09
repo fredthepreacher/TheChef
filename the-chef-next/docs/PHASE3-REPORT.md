@@ -478,6 +478,17 @@ The owner must first provide the Chef-owned domain/subdomain and desired From/Re
 **Launch requirement (owner, 2026-11-08). All three must pass for Resend acceptance:**
 1. The customer receives the inquiry acknowledgment. Implemented: `inquiry_acknowledgment` is queued by the intake transaction.
 2. **Chef receives an immediate new-inquiry notification.** **NOT IMPLEMENTED:** the only templates are `inquiry_acknowledgment`, `catering_proposal` and the approval-gated lifecycle drafts. A Chef notification template, a recipient setting (owner address) and enqueueing in the intake transaction are still needed.
+   - **Update 2026-11-09 (Phase 3.5 integration, `feat/chef-production-integration` @ `c0b263c`): queuing is IMPLEMENTED; delivery is NOT yet accepted.**
+     - Template `owner_inquiry_notification`.
+     - Server-side recipient `CHEF_NOTIFICATION_EMAIL`.
+     - Migration `20261109220000_owner_inquiry_notification`: a 6-argument `submit_catering_inquiry` overload that queues the alert in the same intake transaction, once per request.
+     - Tests in `tests/owner-notification.test.ts`.
+     - Still open for Resend acceptance:
+       - the migration must be applied to the hosted database
+       - the owner's address must be set
+       - Resend must be configured
+       - a send trigger is needed for the "immediate" part. Today queued mail only goes out via the CRM's "Send queued emails" or the `CRON_SECRET` endpoint, and Vercel Hobby crons run at most daily.
+     - Not yet hosted-passed.
 3. No real customer receives a test email. Acceptance must use provider-designated test recipients or an owner-approved non-customer address; the outbox "Send queued emails" action must not be run while real inquiries are queued.
 
 ### Vercel AI Gateway
