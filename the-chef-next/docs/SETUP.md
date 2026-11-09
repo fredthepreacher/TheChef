@@ -4,7 +4,7 @@
 
 The CRM uses the dedicated Supabase project `the-chef-catering-crm` (`pqfyhkehbwikeaongcdo`) in `us-east-1`. Do not apply its migrations to another project. Phase 1.5 hosted acceptance and Phase 2 hosted operations acceptance were completed against the Vercel Preview environment. The production domain was not changed or promoted.
 
-The framework baseline is intentionally frozen at Next.js 15.5.25, React 18, and the package versions in `package-lock.json`. Run from this directory with Node 22 or 24 and install with `npm ci`.
+The framework baseline remains Next.js 15 and React 18. Next.js was patched from 15.5.25 to 15.5.29, and Zod to 4.6.7, to clear disclosed security advisories; no major framework upgrade was performed. Use the exact package versions in `package-lock.json`, run with Node 22 or 24, and install with `npm ci`.
 
 ## Database and migrations
 
@@ -17,7 +17,7 @@ npx supabase db push
 npx supabase db advisors --linked --type all
 ```
 
-Never use `db reset` against the hosted project. The migrations create the Phase 1 CRM foundation plus reusable venues, event operations fields, menu revisions, preparation tasks, event-document metadata, communications, and the private email outbox. All applicable public tables use RLS. `crm_private` stays outside the Data API and is service-only.
+Never use `db reset` against the hosted project. Phase 3 adds quote revisions, secure proposal access, electronic acceptance evidence, event financials, an append-only payment ledger, Stripe webhook receipts, delivery attempts, automation rules, and controlled AI-generation history. All applicable public tables use RLS. `crm_private` stays outside the Data API and is service-only.
 
 The initial owner is already provisioned through the secure bootstrap process. There is no public signup route and public signup remains disabled. Future operator provisioning must use reviewed administrative tooling and an existing verified Auth UUID; client-editable JWT metadata is not an authorization source.
 
@@ -35,6 +35,15 @@ Copy `.env.example` to ignored `.env.local` for local development. Configure mat
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Public Cloudflare Turnstile widget key. |
 | `TURNSTILE_SECRET_KEY` | Server-only Turnstile verification secret. |
 | `ALLOW_LOCAL_INQUIRIES` | Optional `true` in local development only; production ignores it. |
+| `STRIPE_SECRET_KEY` | Server-only Stripe **test-mode** key. Phase 3 rejects non-`sk_test_` keys. |
+| `STRIPE_WEBHOOK_SECRET` | Server-only signing secret for the Preview Stripe webhook endpoint. |
+| `RESEND_API_KEY` | Server-only Resend credential. Do not configure until the Chef sending domain is approved. |
+| `RESEND_WEBHOOK_SECRET` | Server-only Resend webhook signing secret. |
+| `RESEND_FROM_EMAIL` | Verified Chef-owned From address. |
+| `RESEND_REPLY_TO_EMAIL` | Approved Chef Reply-To address. |
+| `CRON_SECRET` | Server-only random secret for bounded email/automation dispatch endpoints. |
+| `AI_GATEWAY_MODEL` | Approved Vercel AI Gateway model identifier for operator-requested drafts. |
+| `AI_GATEWAY_API_KEY` | Optional local server-only Gateway key; Vercel deployments may use OIDC. |
 
 The public intake checks body size, schema, origin, Turnstile, and persistent hourly limits before calling the atomic database function. Successful intake creates or reuses the client, creates one lead, one follow-up task, one queued communication, and one private outbox item. A success response means the inquiry was saved; it does not reserve the date or confirm pricing.
 
@@ -44,17 +53,15 @@ COI and event files use the private `crm-documents` bucket. Operators upload and
 
 The app grants operator delete access only so it can remove an orphan when metadata registration fails. Normal product removal archives metadata and retains the Storage object. Permanent retention and purge policy should be defined before production document volume grows.
 
-## Email provider boundary
+## Phase 3 provider boundaries
 
-The database transaction now creates an idempotent inquiry acknowledgment in `public.communications` and `crm_private.email_outbox`. `lib/email/provider.ts` defines the delivery boundary and `lib/email/templates.ts` renders the branded acknowledgment. No provider is configured, no worker dispatches the outbox, and queued acknowledgments are not marked sent.
+The durable email outbox now has a bounded dispatcher, Resend adapter, signed delivery webhook, provider IDs, attempts, failure states, and idempotency. Delivery remains disabled until a Chef-owned domain/subdomain, From address, Reply-To address, API key, and webhook secret are configured in Vercel Preview. Do not use a real customer as an acceptance recipient.
 
-To enable delivery in a later phase:
+Stripe Checkout is test-mode only. The server creates Checkout Sessions from database-calculated amounts; only a signature-verified webhook or a current authenticated operator can append payment entries. The webhook rejects unknown sessions and amount/currency mismatches and is duplicate-event safe. Success and cancellation pages never mark a payment paid.
 
-1. Select and approve a transactional email provider.
-2. Verify a Chef-owned sending domain with that provider.
-3. Choose the From and Reply-To addresses.
-4. Add the provider API credential only to server-side Vercel environment variables.
-5. Implement a durable dispatcher with retries, provider message IDs, and delivery-state updates.
+Lifecycle automation creates approval-gated drafts for quote follow-up, booking confirmation, upcoming-event reminder, thank-you, review, and rebooking. A human operator must approve the action before it can enter the outbound email queue.
+
+AI assistance is operator initiated and draft-only. It cannot update prices, discounts, agreements, payments, refunds, quote approval, booking, menus, COI status, or send communications. Keep the Vercel AI Gateway project budget at or below the approved $5/month ceiling.
 
 ## Verification
 
@@ -70,11 +77,11 @@ The PGlite suite executes all migrations and covers intake idempotency, RLS role
 
 ## Known operational boundaries
 
-- Deposit and payment are explicitly shown as untracked and excluded from readiness.
 - A human operator must approve COI and menu states; file presence does not infer approval.
 - External calendar synchronization is not configured.
-- Email acknowledgments remain queued until a provider and dispatcher are approved.
-- Quotes, invoices, payments, advanced AI, SMS, payroll/staff scheduling, and a customer portal remain outside Phase 2.
+- Resend delivery, Stripe test payment, and AI generation remain configuration-gated until their Preview credentials are supplied and hosted acceptance is completed.
+- Invoices, SMS, payroll/staff scheduling, certified third-party e-signatures, autonomous AI actions, and a general customer portal are not part of Phase 3.
+- Production scheduling, live Stripe mode, real-customer acceptance messages, and production-domain promotion are prohibited in this phase.
 - Supabase Auth leaked-password protection is currently reported disabled by the hosted security advisor. Enable it in the Chef project if the organization plan exposes that control.
 
-See `docs/PHASE1_5-REPORT.md` and `docs/PHASE2-REPORT.md` for hosted evidence and cleanup results.
+See `docs/PHASE1_5-REPORT.md`, `docs/PHASE2-REPORT.md`, and `docs/PHASE3-REPORT.md` for evidence and remaining hosted gates.

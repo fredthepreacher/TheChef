@@ -82,6 +82,17 @@ export const documentCategories = [
   "event_instructions",
   "other",
 ] as const;
+export const quoteStatuses = [
+  "draft",
+  "ready_for_review",
+  "sent",
+  "viewed",
+  "revision_requested",
+  "approved",
+  "declined",
+  "expired",
+  "superseded",
+] as const;
 export const label = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const text = z.string().trim().max(200);
@@ -358,6 +369,54 @@ export const documentMetadataSchema = z.object({
   replaces_document_id: optionalUuid,
   notes: longNotes,
 });
+export const createQuoteSchema = z.object({
+  lead_id: z.uuid(),
+});
+export const quoteSettingsSchema = z.object({
+  id: z.uuid(),
+  quote_id: z.uuid(),
+  title: text.min(1),
+  introduction: z.string().trim().max(8000).default(""),
+  client_notes: z.string().trim().max(8000).default(""),
+  internal_notes: z.string().trim().max(8000).default(""),
+  discount_cents: z.coerce.number().int().min(0).max(100000000),
+  tax_rate_bps: z.coerce.number().int().min(0).max(10000),
+  service_charge_rate_bps: z.coerce.number().int().min(0).max(10000),
+  gratuity_cents: z.coerce.number().int().min(0).max(100000000),
+  delivery_fee_cents: z.coerce.number().int().min(0).max(100000000),
+  deposit_type: z.enum(["fixed", "percentage"]),
+  deposit_value: z.coerce.number().int().min(0).max(100000000),
+  expires_at: z
+    .union([z.literal(""), z.iso.datetime({ local: true })])
+    .transform((value) => value || null),
+});
+export const quoteLineItemSchema = z.object({
+  quote_id: z.uuid(),
+  quote_version_id: z.uuid(),
+  description: z.string().trim().min(1).max(500),
+  details: longNotes,
+  quantity_milli: z.coerce.number().int().min(1).max(100000000),
+  unit_price_cents: z.coerce.number().int().min(0).max(100000000),
+  taxable: z.enum(["true", "false"]).transform((value) => value === "true"),
+  display_order: z.coerce.number().int().min(0).max(10000),
+});
+export const proposalIssueSchema = z.object({
+  quote_id: z.uuid(),
+  quote_version_id: z.uuid(),
+  agreement_terms: z.string().trim().min(20).max(50000),
+  queue_email: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+export const manualPaymentSchema = z.object({
+  event_id: z.uuid(),
+  event_financial_id: z.uuid(),
+  amount_cents: z.coerce.number().int().positive().max(100000000),
+  transaction_type: z.enum(["payment", "refund", "adjustment"]),
+  note: z.string().trim().min(3).max(2000),
+});
+export const money = (cents: number, currency = "USD") =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+    cents / 100,
+  );
 export type Client = {
   id: string;
   first_name: string;
@@ -459,4 +518,57 @@ export type EventDocument = {
   notes: string;
   archived_at: string | null;
   created_at: string;
+};
+export type QuoteVersion = {
+  id: string;
+  quote_id: string;
+  version: number;
+  status: (typeof quoteStatuses)[number];
+  title: string;
+  introduction: string;
+  client_notes: string;
+  internal_notes: string;
+  currency: "USD";
+  discount_cents: number;
+  tax_rate_bps: number;
+  service_charge_rate_bps: number;
+  gratuity_cents: number;
+  delivery_fee_cents: number;
+  subtotal_cents: number;
+  taxable_cents: number;
+  tax_cents: number;
+  service_charge_cents: number;
+  total_cents: number;
+  deposit_type: "fixed" | "percentage";
+  deposit_value: number;
+  deposit_required_cents: number;
+  expires_at: string | null;
+  sent_at: string | null;
+  viewed_at: string | null;
+  decided_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type QuoteLineItem = {
+  id: string;
+  quote_version_id: string;
+  description: string;
+  details: string;
+  quantity_milli: number;
+  unit_price_cents: number;
+  line_total_cents: number;
+  taxable: boolean;
+  display_order: number;
+};
+export type Quote = {
+  id: string;
+  quote_number: number;
+  client_id: string;
+  lead_id: string;
+  event_id: string | null;
+  current_version_id: string | null;
+  created_at: string;
+  clients: Client;
+  leads: Lead;
+  quote_versions: QuoteVersion[];
 };

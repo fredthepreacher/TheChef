@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOperator } from "@/lib/auth/require-operator";
 import { stages, label, type Lead } from "@/lib/crm/domain";
-import { updateStage, convertLead } from "@/app/crm/actions";
+import { updateStage, convertLead, createQuote } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
 export default async function LeadDetail({
   params,
@@ -29,6 +29,11 @@ export default async function LeadDetail({
     .eq("lead_id", id)
     .order("created_at", { ascending: false });
   if (communicationsError) throw new Error("Could not load communications");
+  const { data: quote } = await db
+    .from("quotes")
+    .select("id")
+    .eq("lead_id", id)
+    .maybeSingle();
   const p = await searchParams;
   return (
     <>
@@ -76,6 +81,16 @@ export default async function LeadDetail({
               Create / open event workspace
             </button>
           </form>
+          {quote ? (
+            <p>
+              <Link href={`/crm/quotes/${quote.id}`}>Open quote / proposal</Link>
+            </p>
+          ) : (
+            <form action={createQuote}>
+              <input type="hidden" name="lead_id" value={id} />
+              <button className="crm-secondary">Create quote</button>
+            </form>
+          )}
           <p className="crm-muted">
             Creating a prospective event does not confirm availability or take a
             payment.

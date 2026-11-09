@@ -1,4 +1,5 @@
 import "server-only";
+import { Resend } from "resend";
 
 export type EmailMessage = {
   to: string;
@@ -28,5 +29,29 @@ export class EmailProviderNotConfiguredError extends Error {
 }
 
 export function configuredEmailProvider(): EmailProvider {
-  throw new EmailProviderNotConfiguredError();
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  const replyTo = process.env.RESEND_REPLY_TO_EMAIL;
+  if (!apiKey || !from || !replyTo)
+    throw new EmailProviderNotConfiguredError();
+  const resend = new Resend(apiKey);
+  return {
+    name: "resend",
+    async send(message) {
+      const { data, error } = await resend.emails.send(
+        {
+          from,
+          replyTo,
+          to: message.to,
+          subject: message.subject,
+          text: message.text,
+          html: message.html,
+        },
+        { idempotencyKey: message.idempotencyKey },
+      );
+      if (error || !data?.id)
+        throw new Error(error?.message ?? "Resend did not return a message ID");
+      return { providerMessageId: data.id, acceptedAt: new Date().toISOString() };
+    },
+  };
 }
