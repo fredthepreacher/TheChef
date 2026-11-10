@@ -13,7 +13,9 @@
 
 **Update 2026-11-10 (combined candidate `0c8fdde`, branch `feat/chef-production-integration`):**
 - The provider-independent hosted end-to-end acceptance of the merged Website + CRM candidate **passes**. It includes Chef's new-inquiry alert queuing.
-- Migration `20261109220000_owner_inquiry_notification` is applied to hosted; migration history is 9/9.
+- Migration `20261109220000_owner_inquiry_notification` is applied to hosted; migration history was then 9/9.
+- The four non-blocking findings (F-1 to F-4) are fixed in `90a6b2a`. Migration `20261110200000` was applied (history now **10/10**), and the fixes were re-verified on the hosted preview at 16:01–16:26 ET.
+- Two new non-blocking findings (F-5 expiry reset on issue, F-6 CRM Approve/Cancel buttons) are open.
 - All test data was cleaned back to the recorded baseline.
 - The Supabase org is now on the **Pro plan**, so no project swap was needed: Chef stays running and `wavysites-web` was never paused.
 - Stripe, Resend delivery and AI Gateway are still pending, so Phase 3 remains **NOT HOSTED PASSED**.
@@ -619,11 +621,20 @@ Both run against the same hosted schema today. They must be merged and re-verifi
   - The follow-up test fails without the migration ("a declined proposal's follow-up is cancelled"), so it guards the fix.
   - HTTP suite against a local `next start`: 9/9.
   - typecheck, lint and build pass; both `npm audit` runs: 0 vulnerabilities; tracked-file secret scan (220 files): 0 findings.
-- **Hosted re-check still to do:**
-  - apply the migration after owner approval
-  - push so the preview rebuilds
-  - one labelled proposal round-trip on the preview: revision request hides the actions; follow-ups are cancelled; ET times; the deposit tile
-  - clean up afterwards
+- **Hosted re-check (2026-11-10, 16:01–16:26 ET): PASS.**
+  - Migration `20261110200000` applied 16:01:37–16:01:44 ET → 10/10.
+  - Branch pushed (`0c8fdde..daa7688`); preview `dpl_3KEyZ97kQWu5ocynRp2jPYBLfunt` READY.
+  - One labelled lead (seeded through the intake function), event, Quote #6 v1–v4. Each version was answered differently:
+    - v1: revision requested
+    - v2: link expired, then replaced
+    - v3: declined
+    - v4: accepted, with its follow-up already approved first
+  - F-1 to F-4 all verified on hosted. **No "A note about your catering proposal" email was ever created**, even after forcing all four follow-ups back to approved-and-due and running the processor.
+  - Cleanup back to the baseline (16:25:56–16:26:05 ET).
+  - Step-by-step results: launch runbook §13, "Hosted re-check of F-1 to F-4".
+- **New findings from the re-check (predate today's fixes, not fixed):**
+  - **F-5:** issuing a proposal resets its expiry to 14 days from issue, overriding the operator's Expires value.
+  - **F-6:** the CRM Approve / Cancel buttons for scheduled actions fail validation on hosted. The clicked button's `approved` value is not received by the server action; Enable/Disable rule buttons share the pattern.
 
 **Not covered by this run:**
 - a Thanksgiving-mode submission on hosted (it needs a second human Turnstile check; covered by the automated tests)
