@@ -10,7 +10,16 @@
   - With owner approval, migration `20261108212749_phase3_proposal_revision_fixes.sql` was applied at **00:08:48 UTC on 2026-11-09** (19:08:48 ET on 2026-11-08). The hosted UI journey then passed: revise with a message → issue v2 → decline with a message → issue v3 → accept → deposit-pending, plus the new Client responses panel. See "Hosted re-test of the D-1/D-2 fix" below.
 - **Stripe test mode, Resend and AI Gateway are PENDING owner configuration.** They are not failed; credentials and decisions have not been supplied.
 - Phase 3 is **NOT HOSTED PASSED**.  
-**Account scope: second swap reversed.** The free slot was swapped twice on 2026-11-08, both times with owner approval. After the second window, `the-chef-catering-crm` was paused (INACTIVE 19:36:26 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 19:41:04 local**). Wavy Sites was smoke-tested again: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST 2 — Claude (please delete)` stored at 19:41:54 (`form=project`, `status=new`, no spam flags) with its alert email sent on attempt 1. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
+
+**Update 2026-11-10 (combined candidate `0c8fdde`, branch `feat/chef-production-integration`):**
+- The provider-independent hosted end-to-end acceptance of the merged Website + CRM candidate **passes**. It includes Chef's new-inquiry alert queuing.
+- Migration `20261109220000_owner_inquiry_notification` is applied to hosted; migration history is 9/9.
+- All test data was cleaned back to the recorded baseline.
+- The Supabase org is now on the **Pro plan**, so no project swap was needed: Chef stays running and `wavysites-web` was never paused.
+- Stripe, Resend delivery and AI Gateway are still pending, so Phase 3 remains **NOT HOSTED PASSED**.
+- See "Hosted end-to-end acceptance of the combined candidate — 2026-11-10" below.
+
+**Account scope (as of 2026-11-08; superseded by the 2026-11-10 Pro-plan note above): second swap reversed.** The free slot was swapped twice on 2026-11-08, both times with owner approval. After the second window, `the-chef-catering-crm` was paused (INACTIVE 19:36:26 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 19:41:04 local**). Wavy Sites was smoke-tested again: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST 2 — Claude (please delete)` stored at 19:41:54 (`form=project`, `status=new`, no spam flags) with its alert email sent on attempt 1. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
 **Date:** 2026-11-08  
 **Branch:** `feat/catering-crm-revenue-ops`  
 **Approved Phase 2 base:** `2164ce326d9658c17dcb07cebc96543ce40448aa`  
@@ -449,6 +458,155 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 6. **Resend**: PENDING owner configuration (Chef-owned sending domain, From/Reply-To, DNS). Also requires the Chef new-inquiry notification below.
 7. **AI Gateway**: PENDING (optional, draft-only, ≤ $5/month).
 8. Owner decision on the stable alias (see timeline above).
+9. ~~Hosted end-to-end acceptance of the merged Website + CRM candidate~~: **done** (2026-11-10, provider-independent scope, see below).
+
+### Hosted end-to-end acceptance of the combined candidate — 2026-11-10
+
+**Candidate under test:** `feat/chef-production-integration` @ `0c8fdde`. No code or documentation commits were made during the test; this evidence was committed afterwards.
+- Vercel `thechef` Preview `dpl_C3niyvy68DjPgj6vBD2pGmGgd7PT` (READY 12:19:54 ET), branch alias `thechef-git-feat-chef-production-integration-wavysites.vercel.app`, behind Vercel sign-in.
+- Backend Preview env (branch-scoped to `feat/chef-production-integration`, Preview only, no Production credentials):
+  - Supabase URL and publishable key
+  - `SUPABASE_SECRET_KEY` (Sensitive, fetched by CLI, never displayed)
+  - Turnstile site key, plus `TURNSTILE_SECRET_KEY` (Sensitive, pasted by the owner)
+  - `APP_ORIGIN`
+  - `INQUIRY_RATE_LIMIT_SECRET` (Sensitive, fresh)
+  - `CHEF_NOTIFICATION_EMAIL=owner-alert-acceptance@example.invalid`, a non-deliverable test address
+- No Stripe, Resend, `CRON_SECRET` or AI keys.
+
+**Supabase window (all times ET, 2026-11-10)**
+
+| Step | Time / result |
+|---|---|
+| Org plan | "Wavy Sites LLC" found on the **Pro** plan at ~11:50. `wavysites-web` cannot be paused on a paid plan ("Projects on a paid plan will always be running"), so the free-slot swap no longer applies. |
+| Resume `the-chef-catering-crm` | Owner approved the running cost ("Yes, resume Chef"). Resume started ~12:10:33; **ACTIVE_HEALTHY 12:17:04**. On Pro it cannot be paused again, so it stays running. |
+| Migration dry run | `db push --linked --dry-run` listed only `20261109220000_owner_inquiry_notification`; nothing unexpected was pending. |
+| Migration applied | 12:18:42–12:18:49; `migration list --linked` shows **9/9** local = remote. |
+| Baseline (read-only counts) | `activity_log` 17, `auth.users` 1, `profiles` 1, `automation_rules` 6, quote sequence last value 5. Every other CRM, outbox, token, rate-limit, webhook and Storage table: 0. |
+| `wavysites-web` | Never paused. ACTIVE_HEALTHY throughout; `https://wavysites.com/api/health` → `{"ok":true}` (200) and `/` 200, checked during the test and again at 14:58. |
+
+**1. Website → CRM intake (real Turnstile).**
+- How it was run:
+  - In the owner's normal Chrome, Malwarebytes Browser Guard blocks the launch-era `/catering/inquiry` page on `*.vercel.app` (finding recorded separately in the launch runbook §13).
+  - The app's built-in browser pane could not be shown to the owner.
+  - With owner approval, the Chef Turnstile widget (`action: "catering_inquiry"`) was rendered on the preview's home page in the owner's Chrome.
+  - Cloudflare showed an **interactive "Verify you are human" check, which the owner ticked**.
+  - The exact JSON body the form builds was then POSTed to `/api/catering/inquiries`. It was reproduced field by field from `components/catering/InquiryForm.tsx`.
+  - Only the form's own Send button was not exercised.
+- **14:15:48 ET (19:15:48 UTC) → HTTP 201**, with the customer message "Your request is in…".
+- One client (`chef-acceptance-1110a@example.invalid`, "TEST / Acceptance (please delete)") and one lead (`new_inquiry`). The lead carries:
+  - Birthday Dinner (TEST), 2027-06-12, 18:00, 40 guests
+  - Test City 00000, `full_service`, Gold
+  - budget "$2,500 – $5,000", consent
+  - `selected_menu_items` = Main Course: Jerk Chicken, Oxtail, folded into `menu_notes` as "Selected on website: …"
+  - the allergy note
+  - the Gold `package_snapshot`
+- One follow-up task: "Respond to new catering inquiry" (`inquiry_follow_up`, todo).
+- Exactly one customer acknowledgment (`inquiry_acknowledgment`) and exactly one **Chef alert** (`owner_inquiry_notification` → `owner-alert-acceptance@example.invalid`, subject "New catering inquiry (Chef alert)").
+  - The alert's template data holds: lead ID, name, email, phone, contact method, event type, date, guests, location and package.
+  - Both are `queued` with 0 attempts. Nothing was sent.
+- Stored inquiry has **no `turnstile_token` and no `website` honeypot** key. `crm_private.inquiry_requests` has one row.
+- The CRM lead page renders every field. The dish list shows as a list, not "[object Object]".
+
+**2. Server-side Turnstile and idempotency.**
+- An immediate identical replay (same request ID and token) → 201 with **no new rows** (still 1 client / 1 lead / 1 request / 2 messages).
+  - The intake is idempotent per request ID.
+  - Note: Cloudflare accepted the token on that immediate replay, so request-ID idempotency, not token single-use, is what prevented a duplicate there.
+- The same token with a new request ID → **400** "Spam protection expired".
+- A fabricated token → **400**.
+- No token → **503** "Please complete the spam protection check."
+
+**3. CRM workflow (owner signed in with the real operator account; Claude drove it in Chrome).**
+- Lead stage New Inquiry → Contacted (saved).
+- "Create / open event workspace" → event (`prospective`) with 6 preparation tasks. Working menu revision 1 is seeded with: the Gold package, the allergy note in dietary and allergy fields, and the website dish picks.
+- Menu saved with entrées, sides and an internal-only marker in internal prep notes.
+- "Create quote" → **Quote #6** v1 with two line items.
+  - Settings: discount $100, tax 8.5%, service 18%, delivery $75, deposit 30%, and an internal-only marker in internal notes.
+  - Totals checked by hand: subtotal $1,950.00 − $100.00, tax $157.25, service $333.00, delivery $75.00 = **$2,415.25**; deposit **$724.58**.
+- Issued v1 ("Lock and issue proposal", proposal email queued) → status Sent. The one-time client link is shown once only.
+
+**4. Client proposal page.**
+- v1 shows title, intro, line items, totals, the client note, the agreement and the validity date.
+- **No internal data in the HTML or the Next.js payload.** Checked absent:
+  - both internal markers and the internal prep note
+  - the client email and phone
+  - the owner-alert address
+  - lead and client IDs, budget and inquiry notes
+- Headers: `Cache-Control: private, no-cache, no-store`; robots `noindex`; no tag code.
+- **v1 revision request** with a message → "Your response has been recorded."
+  - The CRM shows Revision Requested, the message in the Client responses panel, and the trail Draft → Ready For Review → Sent → Viewed → Revision Requested.
+- **v2** ("Create revision" carries the lines and notes; added a vegetarian line, discount $150): $2,478.50 / $743.55, issued with email. The **v1 link now returns 404**.
+- **v2 declined** with a message: the page hides all actions; the lead → Lost with the message as the reason.
+- **v3** after the decline (the D-1 path; discount $250): $2,352.00 / $705.60, issued **without** an email. The v2 link now returns 404.
+- **v3 accepted** (typed name + explicit consent) → "Your electronic acceptance has been recorded…".
+  - Agreement v3 `accepted` with typed name and IP hash; v1/v2 `superseded`; quote v3 `approved`.
+  - Lead → Awaiting Deposit; event financials `approved_deposit_pending` ($2,352.00 due, $705.60 deposit).
+  - 13 access events logged (views, revision_requested, declined, accepted). Tokens v1/v2 revoked, v3 active.
+
+**5. Revenue, ledger, payment pages, email.**
+- Revenue dashboard: Quoted and Approved $2,352.00; 1 awaiting deposit; 4 queued messages (acknowledgment, Chef alert, proposal v1, proposal v2).
+- A **manual TEST ledger entry** of $705.60 (CRM ledger only, no payment method, labelled "not a real payment") gave:
+  - commercial status **Booked**, paid $705.60, remaining $1,646.40
+  - dashboard Collected $705.60, Outstanding $1,646.40, Booked-event value $2,352.00, and the event under "Recently paid"
+  - a "Booking confirmation" follow-up **awaiting approval**, which was not approved
+  - lead and event stages were not auto-advanced, consistent with the Clover rule that the operator sets Booked
+- Stripe is not configured on this preview, so the "Create Stripe test Checkout link" button was not used.
+  - `/payment/success` and `/payment/cancelled`: 200, titles "Payment received | The Chef" / "Payment cancelled | The Chef", `noindex`, no tag code.
+- "Send queued emails" was **never pressed**. All 4 outbox rows stayed `queued`, 0 attempts; **no email was sent to anyone**.
+
+**6. Security and route regression.**
+- Signed out: `/crm`, `/crm/leads`, `/crm/revenue` → `/crm/login`.
+- All CRM pages: `Cache-Control … no-store`, robots `noindex, nofollow, nocache`, `X-Robots-Tag noindex, nofollow, noarchive`, **no tracking code**, signed in or out.
+- A made-up `/proposal/<token>` → 404.
+- `/api/internal/email/dispatch` and `/api/internal/automations` → **401** without, or with a wrong, `CRON_SECRET` bearer (the GET returns 405). The dispatch endpoint never claimed the outbox.
+- `/api/stripe/webhook` with a forged signature → 400.
+- `/api/resend/webhook` → 503 (not configured).
+- With only the public publishable key, direct Supabase REST access is denied (**401, `42501`**):
+  - SELECT on all 17 CRM tables
+  - INSERT into `leads`
+  - RPC calls to `submit_catering_inquiry` (6-argument), `claim_email_outbox` and `accept_proposal_by_token`
+- Production gates (Thanksgiving, privacy notice) were verified by the production-mode build in the launch runbook §12. Nothing was changed.
+
+**7. Cleanup (guarded, atomic).**
+- One `DO` block:
+  1. checks that only the acceptance records exist in tables that were empty at baseline
+  2. pauses user triggers on the affected tables for that transaction only
+  3. clears the circular current-version links and deletes children before parents
+  4. re-enables every trigger and proves none is left disabled
+  5. refuses to commit unless every count equals the baseline
+- Dry run first: rolled back, counts unchanged. Committed **14:56:40–14:56:48 ET**.
+- Deleted:
+  - 1 client, 1 lead, 1 event, 1 event menu, 7 tasks
+  - 4 communications and 4 outbox rows
+  - 1 quote, 3 versions, 8 line items
+  - 1 agreement, 3 agreement versions
+  - 1 event-financials row, 1 manual ledger row
+  - 3 proposal tokens and 13 access events
+  - 4 scheduled actions, 5 rate-limit rows, 1 inquiry request
+  - 80 audit rows written by the test
+  - no Storage objects, payment requests, AI rows or auth users existed to remove
+- Quote numbering reset to its baseline (next quote #6).
+- **Post-check: every count identical to the pre-test baseline.** The only difference is the new 6-argument function, which the migration intentionally added. All 37 user triggers are enabled.
+- Browser leftovers removed: the proposal links held in the test tab's local storage, and the test tab itself. The owner's own CRM tab stays signed in.
+
+**Findings (non-blocking; none affects data integrity):**
+- **F-1 (UX):** after a revision request, the client proposal page still shows Accept / Request revision / Decline.
+  - `revision_requested` is missing from the page's `final` list in `app/proposal/[token]/page.tsx`.
+  - The server correctly refuses (acceptance attempt → "This proposal could not be updated…").
+  - Fix: treat `revision_requested` as final on the page, with a "Chef is preparing a revised proposal" notice.
+- **F-2 (display):** several CRM timestamps render in UTC with no label, while the activity log shows ET. Example: communications "7:15:51 PM" vs activity "2:15:51 PM ET". Affected:
+  - communications
+  - task due times
+  - ledger entries
+  - "Booking confirmation" due time
+  - the quote "Expires" field
+- **F-3 (copy):** the event's readiness tile still says "Deposit / payment — Not tracked in Phase 2" after financials exist. Also, the event page's Quote card says "Create a quote from the original inquiry." with no button; the button is on the lead page.
+- **F-4 (to check before automations are switched on):** proposal follow-up scheduled actions for superseded or declined versions stay "awaiting approval". Three remained for v1–v3 after v3 was accepted. Not verified whether approving one for a superseded version would queue an email.
+
+**Not covered by this run:**
+- a Thanksgiving-mode submission on hosted (it needs a second human Turnstile check; covered by the automated tests)
+- the form's own Send button in a browser (see the Browser Guard finding)
+- mobile layout
+- Stripe, Resend delivery and AI Gateway (pending owner configuration)
 
 ## Preview/provider configuration status
 
@@ -484,7 +642,7 @@ The owner must first provide the Chef-owned domain/subdomain and desired From/Re
      - Migration `20261109220000_owner_inquiry_notification`: a 6-argument `submit_catering_inquiry` overload that queues the alert in the same intake transaction, once per request.
      - Tests in `tests/owner-notification.test.ts`.
      - Still open for Resend acceptance:
-       - the migration must be applied to the hosted database
+       - ~~the migration must be applied to the hosted database~~: **done 2026-11-10** (9/9). A hosted inquiry queued the alert exactly once to the test address `owner-alert-acceptance@example.invalid`, with nothing sent.
        - the owner's address must be set
        - Resend must be configured
        - a send trigger is needed for the "immediate" part. Today queued mail only goes out via the CRM's "Send queued emails" or the `CRON_SECRET` endpoint, and Vercel Hobby crons run at most daily.
@@ -577,8 +735,15 @@ Green:
 - preview → Supabase intake
 - the core UI path
 - the revision/decline/request-revision paths, after the D-1/D-2 fix was applied to hosted
+- **2026-11-10:** hosted end-to-end acceptance of the merged Website + CRM candidate `0c8fdde`. It covered:
+  - real Turnstile intake
+  - Chef alert queuing
+  - lead → event → menu → quote → revise → decline → revise → accept
+  - ledger and revenue
+  - security checks
+  - cleanup back to baseline
 
 Blocking:
-- Stripe test mode, Resend (including the missing Chef new-inquiry notification) and AI Gateway are **pending owner configuration**, not failed.
+- Stripe test mode, Resend (delivery of the acknowledgment and the now-queued Chef alert) and AI Gateway are **pending owner configuration**, not failed.
 
 Phase 4 has not begun. `main` and the production domain are untouched.
