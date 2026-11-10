@@ -9,6 +9,7 @@ import {
 } from "@/lib/crm/domain";
 import { calculateReadiness } from "@/lib/crm/readiness";
 import { Empty } from "@/components/crm/Shared";
+import { formatEtDateTime } from "@/lib/crm/time";
 
 export default async function Dashboard() {
   const { db } = await requireOperator();
@@ -162,7 +163,7 @@ export default async function Dashboard() {
                   {client.first_name} {client.last_name} · {lead.requested_date}
                 </p>
                 <small>
-                  Received {new Date(lead.created_at).toLocaleString()}
+                  Received {formatEtDateTime(lead.created_at)}
                 </small>
               </Link>
             );
@@ -180,7 +181,7 @@ export default async function Dashboard() {
               <Link href={task.event_id ? `/crm/events/${task.event_id}#tasks` : "/crm/tasks"}>
                 {task.title}
               </Link>{" "}
-              · {task.due_at ? new Date(task.due_at).toLocaleString() : ""}
+              · {task.due_at ? formatEtDateTime(task.due_at) : ""}
             </p>
           ))}
           {!overdueResult.data?.length && <p>No overdue tasks.</p>}

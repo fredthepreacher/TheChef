@@ -8,6 +8,7 @@ import {
   label,
   type EventDocument,
 } from "@/lib/crm/domain";
+import { formatEtDateTime } from "@/lib/crm/time";
 
 export function DocumentManager({
   eventId,
@@ -172,7 +173,7 @@ export function DocumentManager({
               <small>
                 {label(document.category)} · Version {document.version} ·{" "}
                 {label(document.state)} ·{" "}
-                {new Date(document.created_at).toLocaleString()}
+                {formatEtDateTime(document.created_at)}
               </small>
             </div>
             <div className="crm-row-actions">

@@ -2,6 +2,7 @@ import { requireOperator } from "@/lib/auth/require-operator";
 import { decideScheduledAction, processDueAutomations, sendQueuedEmails, updateAutomationRule } from "@/app/crm/actions";
 import { label } from "@/lib/crm/domain";
 import { Notice } from "@/components/crm/Shared";
+import { formatEtDateTime } from "@/lib/crm/time";
 
 type ScheduledAction = { id: string; name: string; action_key: string; entity_type: string; entity_id: string; due_at: string; status: string; last_error: string | null };
 
@@ -30,7 +31,7 @@ export default async function CommunicationsPage({ searchParams }: {
     <section className="crm-panel">
       <div className="crm-section-heading"><h2>Scheduled actions</h2><form action={processDueAutomations}><button className="crm-secondary">Process approved due actions</button></form></div>
       {((scheduled ?? []) as ScheduledAction[]).map((action) => <div className="crm-record-row" key={action.id}>
-        <span><strong>{action.name}</strong><small>{label(action.status)} · due {new Date(action.due_at).toLocaleString()}</small></span>
+        <span><strong>{action.name}</strong><small>{label(action.status)} · due {formatEtDateTime(action.due_at)}</small></span>
         {action.status === "awaiting_approval" && <div className="crm-row-actions">
           <form action={decideScheduledAction}><input type="hidden" name="id" value={action.id} /><button name="approved" value="true">Approve</button></form>
           <form action={decideScheduledAction}><input type="hidden" name="id" value={action.id} /><button name="approved" value="false" className="crm-secondary">Cancel</button></form>
@@ -42,7 +43,7 @@ export default async function CommunicationsPage({ searchParams }: {
       <div className="crm-section-heading"><h2>Email outbox history</h2><form action={sendQueuedEmails}><button>Send queued emails</button></form></div>
       <p className="crm-muted">This explicit action sends queued messages. Use only approved test recipients during acceptance.</p>
       {communications?.map((item) => <div className="crm-record-row" key={item.id}>
-        <span><strong>{item.subject}</strong><small>{item.recipient} · {label(item.template_key)} · {new Date(item.created_at).toLocaleString()}</small></span>
+        <span><strong>{item.subject}</strong><small>{item.recipient} · {label(item.template_key)} · {formatEtDateTime(item.created_at)}</small></span>
         <span className="crm-chip">{label(item.status)}</span>
       </div>)}
       {!communications?.length && <p>No communications recorded.</p>}

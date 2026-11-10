@@ -36,6 +36,34 @@ test("readiness is explainable and excludes neutral payment state", () => {
   );
 });
 
+test("deposit / payment reflects the commercial record but is never scored", () => {
+  const tasks = [{ required: true, status: "complete" as const, due_at: null, title: "Confirm menu" }];
+  const at = new Date("2026-09-11T12:00:00Z");
+  const payment = (financial: Parameters<typeof calculateReadiness>[5]) => {
+    const result = calculateReadiness(readyEvent, { status: "approved" }, tasks, [], at, financial);
+    assert.equal(result.percentage, 100, "payment never changes the score");
+    return result.indicators.find((indicator) => indicator.key === "payment")!;
+  };
+  const record = { deposit_required_cents: 70560, paid_cents: 0, balance_remaining_cents: 235200 };
+  assert.deepEqual(
+    [payment(undefined).state, payment(undefined).detail],
+    ["neutral", "No accepted proposal yet"],
+  );
+  assert.doesNotMatch(payment(null).detail, /Phase 2/);
+  assert.deepEqual(
+    [payment({ ...record, commercial_status: "approved_deposit_pending" }).state,
+      payment({ ...record, commercial_status: "approved_deposit_pending" }).detail],
+    ["attention", "Deposit of $705.60 pending"],
+  );
+  assert.deepEqual(
+    [payment({ ...record, commercial_status: "booked", paid_cents: 70560, balance_remaining_cents: 164640 }).state,
+      payment({ ...record, commercial_status: "booked", paid_cents: 70560, balance_remaining_cents: 164640 }).detail],
+    ["ready", "Deposit received · $1,646.40 balance remaining"],
+  );
+  assert.equal(payment({ ...record, commercial_status: "paid", balance_remaining_cents: 0 }).detail, "Paid in full");
+  assert.equal(payment({ ...record, commercial_status: "refunded" }).state, "neutral");
+});
+
 test("missing data lowers readiness instead of implying success", () => {
   const result = calculateReadiness(
     {

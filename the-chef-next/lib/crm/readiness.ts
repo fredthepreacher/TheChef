@@ -1,8 +1,10 @@
-import type {
-  CateringEvent,
-  EventDocument,
-  EventMenu,
-  EventTask,
+import {
+  label,
+  money,
+  type CateringEvent,
+  type EventDocument,
+  type EventMenu,
+  type EventTask,
 } from "@/lib/crm/domain";
 
 export type ReadinessState = "ready" | "attention" | "blocked" | "neutral";
@@ -31,12 +33,47 @@ type ReadinessEvent = Pick<
   | "client_confirmed_at"
 >;
 
+/** The event's commercial record (event_financials), when a proposal has been accepted. */
+export type ReadinessFinancial = {
+  commercial_status: string;
+  deposit_required_cents: number;
+  paid_cents: number;
+  balance_remaining_cents: number;
+} | null;
+
+/**
+ * Deposit / payment is shown for context but never scored: booking is still
+ * confirmed by the operator (Clover rule), not by this percentage.
+ */
+function paymentIndicator(financial: ReadinessFinancial | undefined): ReadinessIndicator {
+  const base = { key: "payment", label: "Deposit / payment", included: false };
+  if (!financial || financial.commercial_status === "proposal")
+    return { ...base, state: "neutral", detail: "No accepted proposal yet" };
+  switch (financial.commercial_status) {
+    case "approved_deposit_pending":
+      return { ...base, state: "attention", detail: `Deposit of ${money(financial.deposit_required_cents)} pending` };
+    case "booked":
+    case "balance_due":
+      return {
+        ...base,
+        state: "ready",
+        detail: `Deposit received · ${money(financial.balance_remaining_cents)} balance remaining`,
+      };
+    case "paid":
+    case "completed":
+      return { ...base, state: "ready", detail: "Paid in full" };
+    default:
+      return { ...base, state: "neutral", detail: label(financial.commercial_status) };
+  }
+}
+
 export function calculateReadiness(
   event: ReadinessEvent,
   menu: Pick<EventMenu, "status"> | null,
   tasks: Array<Pick<EventTask, "required" | "status" | "due_at" | "title">>,
   documents: Array<Pick<EventDocument, "category" | "state">>,
   now = new Date(),
+  financial?: ReadinessFinancial,
 ): EventReadiness {
   const venueName = String(event.venue_snapshot?.name ?? "").trim();
   const venueAddress = String(event.venue_snapshot?.address ?? "").trim();
@@ -160,13 +197,7 @@ export function calculateReadiness(
         : "Final confirmation needed",
       included: true,
     },
-    {
-      key: "payment",
-      label: "Deposit / payment",
-      state: "neutral",
-      detail: "Not tracked in Phase 2",
-      included: false,
-    },
+    paymentIndicator(financial),
   );
 
   const scored = indicators.filter((indicator) => indicator.included);

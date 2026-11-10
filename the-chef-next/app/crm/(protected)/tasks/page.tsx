@@ -7,6 +7,7 @@ import {
   type EventTask,
 } from "@/lib/crm/domain";
 import { Empty, Notice } from "@/components/crm/Shared";
+import { formatEtDateTime } from "@/lib/crm/time";
 
 type TaskRow = EventTask & {
   events: { event_type: string; event_date: string } | null;
@@ -95,9 +96,7 @@ export default async function Tasks({
                   · {task.events?.event_type ?? "Lead follow-up"} ·{" "}
                   {label(task.priority)}
                   {task.due_at
-                    ? ` · ${overdue ? "OVERDUE " : "Due "}${new Date(
-                        task.due_at,
-                      ).toLocaleString()}`
+                    ? ` · ${overdue ? "OVERDUE " : "Due "}${formatEtDateTime(task.due_at)}`
                     : ""}
                 </small>
                 {task.event_id && (

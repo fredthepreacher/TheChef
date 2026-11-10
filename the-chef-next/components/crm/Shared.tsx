@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireOperator } from "@/lib/auth/require-operator";
 import { label } from "@/lib/crm/domain";
+import { formatEtDateTime } from "@/lib/crm/time";
 export function Notice({ error, saved }: { error?: string; saved?: string }) {
   return error ? (
     <p className="crm-notice" role="alert">
@@ -45,12 +46,7 @@ export async function Activity({ id, relatedIds = [] }: { id: string; relatedIds
           <strong>
             {label(a.action)} · {label(a.entity_type)}
           </strong>
-          <time>
-            {new Date(a.created_at).toLocaleString("en-US", {
-              timeZone: "America/New_York",
-            })}{" "}
-            ET
-          </time>
+          <time>{formatEtDateTime(a.created_at)}</time>
           {a.metadata?.before?.status !== a.metadata?.after?.status &&
             a.metadata?.after?.status && (
               <p>

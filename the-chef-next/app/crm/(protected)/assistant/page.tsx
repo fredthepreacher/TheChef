@@ -1,6 +1,7 @@
 import { requireOperator } from "@/lib/auth/require-operator";
 import { generateOperatorAssistance } from "@/app/crm/actions";
 import { label } from "@/lib/crm/domain";
+import { formatEtDateTime } from "@/lib/crm/time";
 
 const generationTypes = [
   "event_summary","draft_inquiry_response","draft_quote_follow_up",
@@ -41,7 +42,7 @@ export default async function AssistantPage({ searchParams }: {
       </form>
     </section>
     {selected && <section className="crm-panel">
-      <p className="crm-eyebrow">{label(selected.generation_type)} · {new Date(selected.created_at).toLocaleString()}</p>
+      <p className="crm-eyebrow">{label(selected.generation_type)} · {formatEtDateTime(selected.created_at)}</p>
       <div className="crm-agreement">{selected.output_text}</div>
       <p className="crm-muted">Model: {selected.model} · Review and edit before use. This output was not sent automatically.</p>
     </section>}

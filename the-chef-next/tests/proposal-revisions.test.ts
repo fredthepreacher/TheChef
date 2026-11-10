@@ -3,6 +3,20 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
+import { PROPOSAL_OPEN_STATUSES, proposalClosedNotice, quoteStatuses } from "../lib/crm/domain";
+
+// F-1 (hosted acceptance 2026-11-10): after a revision request the client page
+// still offered Accept / Request revision / Decline, which the server refuses.
+test("client proposal page offers actions only while a response is accepted", () => {
+  const open = quoteStatuses.filter((s) => PROPOSAL_OPEN_STATUSES.includes(s));
+  assert.deepEqual(open, ["sent", "viewed"], "mirrors accept/respond_to_proposal_by_token");
+  assert.match(proposalClosedNotice("revision_requested"), /preparing a revised proposal/);
+  assert.match(proposalClosedNotice("approved"), /accepted/);
+  assert.match(proposalClosedNotice("declined"), /declined/);
+  assert.match(proposalClosedNotice("expired"), /expired/);
+  for (const status of quoteStatuses.filter((s) => !PROPOSAL_OPEN_STATUSES.includes(s)))
+    assert.ok(proposalClosedNotice(status).length > 0, status);
+});
 
 /**
  * Regression for hosted UI acceptance defects found on 2026-11-08:
@@ -73,6 +87,43 @@ test("proposal revisions, client messages and final acceptance", async () => {
   await addLine(v1, 100000);
   await issue(v1, "token-v1");
 
+  // F-4: each issued version gets one approval-gated "Quote follow-up".
+  const followUp = async (versionId: string) => {
+    await asRole("service_role");
+    const row = (await db.query<{ id: string; status: string }>(
+      "select id,status from crm_private.scheduled_actions where entity_type='quote_version' and entity_id=$1",
+      [versionId],
+    )).rows[0];
+    await asRole("authenticated", owner);
+    return row;
+  };
+  const followUpEmails = async () => {
+    await asRole("service_role");
+    const n = (await db.query<{ n: number }>(
+      "select count(*)::int n from communications where template_key='draft_quote_follow_up'",
+    )).rows[0].n;
+    await asRole("authenticated", owner);
+    return n;
+  };
+  const makeDue = async (actionId: string) => {
+    await asRole("service_role");
+    await db.query("update crm_private.scheduled_actions set due_at=now()-interval '1 minute' where id=$1", [actionId]);
+  };
+  const processDue = async () => {
+    await asRole("service_role");
+    const n = (await db.query<{ n: number }>("select process_due_scheduled_actions(10) as n")).rows[0].n;
+    await asRole("authenticated", owner);
+    return n;
+  };
+  const v1FollowUp = await followUp(v1);
+  assert.equal(v1FollowUp.status, "awaiting_approval");
+  // Positive control: an approved follow-up for a proposal still awaiting an answer is sent.
+  await db.query("select approve_scheduled_action($1,true)", [v1FollowUp.id]);
+  await makeDue(v1FollowUp.id);
+  assert.equal(await processDue(), 1);
+  assert.equal(await followUpEmails(), 1);
+  assert.equal((await followUp(v1)).status, "completed");
+
   // D-2: client requests a revision WITH a message
   await asRole("service_role");
   await db.query("select respond_to_proposal_by_token($1,'revision_requested',$2,$3)", [
@@ -120,19 +171,39 @@ test("proposal revisions, client messages and final acceptance", async () => {
     db.query("select respond_to_proposal_by_token($1,'declined','',$2)", [sha("token-v1"), net]),
     /invalid or expired/,
   );
+  await asRole("authenticated", owner);
+  assert.equal((await followUp(v2)).status, "awaiting_approval");
+  await asRole("service_role");
   await db.query("select respond_to_proposal_by_token($1,'declined',$2,$3)", [sha("token-v2"), "Over our budget.", net]);
   await asRole("authenticated", owner);
-  const lost = (await db.query<{ status: string; lost_reason: string }>("select status,lost_reason from leads where id=$1", [lead.id])).rows[0];
+  assert.equal((await followUp(v2)).status, "cancelled", "a declined proposal's follow-up is cancelled");
+  await assert.rejects(
+    db.query("select approve_scheduled_action($1,true)", [(await followUp(v2)).id]),
+    /unavailable/,
+  );
+  const lost =(await db.query<{ status: string; lost_reason: string }>("select status,lost_reason from leads where id=$1", [lead.id])).rows[0];
   assert.deepEqual(lost, { status: "lost", lost_reason: "Over our budget." });
 
   // Revision v3 → issued → accepted → deposit pending
   await db.query("select create_quote_revision($1)", [quoteId]);
   const v3 = await currentVersion();
   await issue(v3, "token-v3");
+  assert.equal((await followUp(v3)).status, "awaiting_approval");
+  // Approved but not yet processed when the client accepts (a race the guard must win).
+  await db.query("select approve_scheduled_action($1,true)", [(await followUp(v3)).id]);
   await asRole("service_role");
   await db.query("select accept_proposal_by_token($1,'Rev Test','I agree to the catering service agreement.',$2,'Test')", [
     sha("token-v3"), sha("ip"),
   ]);
+  await asRole("authenticated", owner);
+  assert.equal((await followUp(v3)).status, "cancelled", "an accepted proposal's follow-up is cancelled");
+  // Processor guard: even a follow-up forced back to pending is never sent for a closed proposal.
+  await asRole("service_role");
+  await db.query("update crm_private.scheduled_actions set status='pending' where entity_type='quote_version' and entity_id=$1", [v3]);
+  await makeDue((await followUp(v3)).id);
+  assert.equal(await processDue(), 0);
+  assert.equal((await followUp(v3)).status, "cancelled");
+  assert.equal(await followUpEmails(), 1, "no follow-up email for answered or superseded proposals");
   await asRole("authenticated", owner);
   assert.equal(
     (await db.query<{ s: string }>("select commercial_status s from event_financials ef join quotes q on q.event_id=ef.event_id where q.id=$1", [quoteId])).rows[0].s,

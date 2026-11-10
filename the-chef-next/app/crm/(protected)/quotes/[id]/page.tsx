@@ -5,6 +5,7 @@ import { requireOperator } from "@/lib/auth/require-operator";
 import { addQuoteLineItem, createQuoteRevision, issueProposal, revokeProposal, updateQuoteSettings } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
 import { label, money, type Client, type QuoteLineItem, type QuoteVersion } from "@/lib/crm/domain";
+import { formatEtDateTime, toEtInputValue } from "@/lib/crm/time";
 
 type ProposalResponse = {
   version: number;
@@ -133,7 +134,7 @@ export default async function QuoteDetailPage({ params, searchParams }: {
                 <label>Gratuity (USD)<input name="gratuity_dollars" defaultValue={(version.gratuity_cents / 100).toFixed(2)} /></label>
                 <label>Deposit method<select name="deposit_type" defaultValue={version.deposit_type}><option value="percentage">Percentage</option><option value="fixed">Fixed amount</option></select></label>
                 <label>Deposit value ({version.deposit_type === "percentage" ? "%" : "USD"})<input name="deposit_value_display" defaultValue={version.deposit_type === "percentage" ? (version.deposit_value / 100).toFixed(2) : (version.deposit_value / 100).toFixed(2)} /></label>
-                <label>Expires<input name="expires_at" type="datetime-local" defaultValue={version.expires_at?.slice(0, 16) ?? ""} /></label>
+                <label>Expires (ET)<input name="expires_at" type="datetime-local" defaultValue={toEtInputValue(version.expires_at)} /></label>
               </div>
               <button>Save proposal</button>
             </form>
@@ -161,7 +162,7 @@ export default async function QuoteDetailPage({ params, searchParams }: {
             <div className="crm-record-row" key={`${response.version}-${response.action}-${response.created_at}`}>
               <span>
                 <strong>Version {response.version} · {label(response.action)}</strong>
-                <small>{new Date(response.created_at).toLocaleString("en-US", { timeZone: "America/New_York" })} ET</small>
+                <small>{formatEtDateTime(response.created_at)}</small>
                 {response.message
                   ? <span style={{ whiteSpace: "pre-line" }}>“{response.message}”</span>
                   : <small>No message</small>}

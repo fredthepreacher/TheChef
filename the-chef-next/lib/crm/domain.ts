@@ -5,6 +5,7 @@ import {
   groupSelection,
 } from "@/lib/catering/menu-catalog";
 import { THANKSGIVING, feastById, type Feast } from "@/data/thanksgiving";
+import { etInputToIso } from "@/lib/crm/time";
 
 export const stages = [
   "new_inquiry",
@@ -93,6 +94,23 @@ export const quoteStatuses = [
   "expired",
   "superseded",
 ] as const;
+/** Quote-version states in which the client can still accept, ask for changes or decline. */
+export const PROPOSAL_OPEN_STATUSES: readonly string[] = ["sent", "viewed"];
+/** What the client proposal page says when a proposal no longer takes a response. */
+export function proposalClosedNotice(status: string): string {
+  switch (status) {
+    case "approved":
+      return "You accepted this proposal. The Chef will follow up with deposit instructions.";
+    case "revision_requested":
+      return "You asked for changes. The Chef is preparing a revised proposal and will send you a new link.";
+    case "declined":
+      return "You declined this proposal. Contact The Chef if you would like a new one.";
+    case "expired":
+      return "This proposal has expired. Contact The Chef for an updated proposal.";
+    default:
+      return "This proposal is no longer open for a response. Contact The Chef with any questions.";
+  }
+}
 export const label = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const text = z.string().trim().max(200);
@@ -262,9 +280,16 @@ export const eventSchema = z.object({
 const optionalUuid = z
   .union([z.literal(""), z.uuid()])
   .transform((value) => value || null);
+/**
+ * `datetime-local` form values are Eastern wall time (see lib/crm/time.ts);
+ * store them as the matching UTC instant. A value that already carries a
+ * zone ("Z") is kept as that instant.
+ */
 const optionalDateTime = z
   .union([z.literal(""), z.iso.datetime({ local: true })])
-  .transform((value) => value || null);
+  .transform((value) =>
+    !value ? null : /z$/i.test(value) ? new Date(value).toISOString() : etInputToIso(value),
+  );
 const optionalTime = z
   .union([
     z.literal(""),
@@ -386,9 +411,7 @@ export const quoteSettingsSchema = z.object({
   delivery_fee_cents: z.coerce.number().int().min(0).max(100000000),
   deposit_type: z.enum(["fixed", "percentage"]),
   deposit_value: z.coerce.number().int().min(0).max(100000000),
-  expires_at: z
-    .union([z.literal(""), z.iso.datetime({ local: true })])
-    .transform((value) => value || null),
+  expires_at: optionalDateTime,
 });
 export const quoteLineItemSchema = z.object({
   quote_id: z.uuid(),

@@ -5,7 +5,8 @@ import { z } from "zod";
 import { serviceClient } from "@/lib/supabase/service";
 import { privacyFingerprint } from "@/lib/security/fingerprint";
 import { headers } from "next/headers";
-import { money } from "@/lib/crm/domain";
+import { money, PROPOSAL_OPEN_STATUSES, proposalClosedNotice } from "@/lib/crm/domain";
+import { formatEtDate } from "@/lib/crm/time";
 import { acceptProposal, respondToProposal } from "./actions";
 import "@/app/crm/crm.css";
 
@@ -54,7 +55,10 @@ export default async function ProposalPage({ params, searchParams }: {
   if (error || !data) notFound();
   const proposal = data as Proposal;
   const p = await searchParams;
-  const final = ["approved", "declined", "expired", "superseded"].includes(proposal.status);
+  // Only these states accept a client response (accept_proposal_by_token and
+  // respond_to_proposal_by_token refuse every other status).
+  const open = PROPOSAL_OPEN_STATUSES.includes(proposal.status);
+  const closedNotice = !open && !p.accepted && !p.responded ? proposalClosedNotice(proposal.status) : null;
   return <main className="inquiry-root">
     <div className="inquiry-wrap">
       <p className="crm-eyebrow">The Chef · Catering proposal #{proposal.quote_number}</p>
@@ -62,6 +66,7 @@ export default async function ProposalPage({ params, searchParams }: {
       {p.error && <p className="crm-notice" role="alert">This proposal could not be updated. Please refresh the page or contact The Chef.</p>}
       {p.accepted && <p className="crm-notice" role="status">Thank you. Your electronic acceptance has been recorded. The Chef will follow up with deposit instructions.</p>}
       {p.responded && <p className="crm-notice" role="status">Your response has been recorded. The Chef will follow up with you.</p>}
+      {closedNotice && <p className="crm-notice" role="status">{closedNotice}</p>}
       <section className="crm-panel">
         <h2>{proposal.client.first_name} {proposal.client.last_name}</h2>
         <p>{proposal.event.event_type} · {proposal.event.requested_date} · {proposal.event.guest_count} guests</p>
@@ -84,20 +89,20 @@ export default async function ProposalPage({ params, searchParams }: {
           <div><dt>Deposit required</dt><dd><strong>{money(proposal.deposit_required_cents)}</strong></dd></div>
         </dl>
         {proposal.client_notes && <p className="crm-prewrap">{proposal.client_notes}</p>}
-        {proposal.expires_at && <p className="crm-muted">Valid through {new Date(proposal.expires_at).toLocaleDateString("en-US")}.</p>}
+        {proposal.expires_at && <p className="crm-muted">Valid through {formatEtDate(proposal.expires_at)}.</p>}
       </section>
       <section className="crm-panel">
         <h2>Catering service agreement</h2>
         <div className="crm-agreement">{proposal.agreement_terms}</div>
         <p className="crm-muted">Acceptance records electronic acceptance evidence. It is not a third-party certified e-signature service.</p>
-        {!final && <form action={acceptProposal}>
+        {open && <form action={acceptProposal}>
           <input type="hidden" name="token" value={token} />
           <label>Full legal name<input name="typed_name" minLength={2} maxLength={200} required autoComplete="name" /></label>
           <label className="inquiry-check"><input type="checkbox" name="consent" value="true" required /> I have reviewed this proposal and agreement and agree to accept them electronically.</label>
           <button>Accept proposal and agreement</button>
         </form>}
       </section>
-      {!final && <section className="crm-panel">
+      {open && <section className="crm-panel">
         <h2>Need a change?</h2>
         <form action={respondToProposal}>
           <input type="hidden" name="token" value={token} />

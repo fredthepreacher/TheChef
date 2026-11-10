@@ -26,13 +26,12 @@ import {
   updateEventOperations,
   recordManualPayment,
   createStripeCheckout,
+  createQuote,
 } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
 import { EventReadiness } from "@/components/crm/EventReadiness";
 import { DocumentManager } from "@/components/crm/DocumentManager";
-
-const easternInput = (value: string | null) =>
-  value ? value.slice(0, 16) : "";
+import { formatEtDateTime, toEtInputValue } from "@/lib/crm/time";
 
 export default async function EventDetail({
   params,
@@ -99,7 +98,6 @@ export default async function EventDetail({
   const menuHistory = historyResult.data as EventMenu[];
   const tasks = tasksResult.data as EventTask[];
   const documents = docsResult.data as EventDocument[];
-  const readiness = calculateReadiness(event, menu, tasks, documents);
   const financial = financialResult.data as null | {
     id: string;
     commercial_status: string;
@@ -117,6 +115,7 @@ export default async function EventDetail({
       occurred_at: string;
     }>;
   };
+  const readiness = calculateReadiness(event, menu, tasks, documents, new Date(), financial);
   const eventQuote = quoteResult.data as null | { id: string; quote_number: number };
 
   const pageState = await searchParams;
@@ -255,7 +254,15 @@ export default async function EventDetail({
             </button>
           </form>
           <h3>Quote</h3>
-          {eventQuote ? <Link href={`/crm/quotes/${eventQuote.id}`}>Quote #{eventQuote.quote_number}</Link> : <p className="crm-muted">Create a quote from the original inquiry.</p>}
+          {eventQuote ? (
+            <Link href={`/crm/quotes/${eventQuote.id}`}>Quote #{eventQuote.quote_number}</Link>
+          ) : (
+            <form action={createQuote}>
+              <input type="hidden" name="lead_id" value={event.lead_id} />
+              <p className="crm-muted">Create a quote from the original inquiry.</p>
+              <button className="crm-secondary">Create quote</button>
+            </form>
+          )}
         </section>
       </div>
 
@@ -274,7 +281,7 @@ export default async function EventDetail({
           {financial.payment_transactions
             .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
             .map((transaction) => <div className="crm-record-row" key={transaction.id}>
-              <span><strong>{label(transaction.transaction_type)} · {label(transaction.source)}</strong><small>{transaction.note} · {new Date(transaction.occurred_at).toLocaleString()}</small></span>
+              <span><strong>{label(transaction.transaction_type)} · {label(transaction.source)}</strong><small>{transaction.note} · {formatEtDateTime(transaction.occurred_at)}</small></span>
               <strong>{money(transaction.amount_cents)}</strong>
             </div>)}
           {!financial.payment_transactions.length && <p>No payments recorded.</p>}
@@ -357,11 +364,11 @@ export default async function EventDetail({
               </select>
             </label>
             <label>
-              COI due date and time
+              COI due date and time (ET)
               <input
                 type="datetime-local"
                 name="coi_due_at"
-                defaultValue={easternInput(event.coi_due_at)}
+                defaultValue={toEtInputValue(event.coi_due_at)}
               />
             </label>
           </div>
@@ -461,7 +468,7 @@ export default async function EventDetail({
           {menuHistory.map((revision) => (
             <p key={revision.id}>
               Revision {revision.version} · {label(revision.status)} ·{" "}
-              {new Date(revision.updated_at).toLocaleString()}
+              {formatEtDateTime(revision.updated_at)}
             </p>
           ))}
         </details>
@@ -506,7 +513,7 @@ export default async function EventDetail({
               <small>
                 {label(task.category)} · {label(task.priority)}
                 {task.due_at
-                  ? ` · Due ${new Date(task.due_at).toLocaleString()}`
+                  ? ` · Due ${formatEtDateTime(task.due_at)}`
                   : ""}
               </small>
             </span>
@@ -561,7 +568,7 @@ export default async function EventDetail({
                 </select>
               </label>
               <label>
-                Due
+                Due (ET)
                 <input type="datetime-local" name="due_at" />
               </label>
               <label>

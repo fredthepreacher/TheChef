@@ -5,6 +5,7 @@ import { requireOperator } from "@/lib/auth/require-operator";
 import { stages, label, type Lead } from "@/lib/crm/domain";
 import { updateStage, convertLead, createQuote } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
+import { formatEtDateTime } from "@/lib/crm/time";
 
 /** One inquiry value: lists, nested objects (Thanksgiving order, ad attribution) or text. */
 function InquiryValue({ value }: { value: unknown }) {
@@ -162,7 +163,7 @@ export default async function LeadDetail({
               <strong>{communication.subject}</strong>
               <small>
                 {label(communication.channel)} · {label(communication.status)} ·{" "}
-                {new Date(communication.created_at).toLocaleString()}
+                {formatEtDateTime(communication.created_at)}
               </small>
             </span>
           </div>

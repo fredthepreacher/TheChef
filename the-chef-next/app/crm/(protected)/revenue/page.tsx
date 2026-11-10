@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Empty } from "@/components/crm/Shared";
 import { requireOperator } from "@/lib/auth/require-operator";
 import { label, money } from "@/lib/crm/domain";
+import { formatEtDate, formatEtDateTime } from "@/lib/crm/time";
 
 type ClientName = { first_name: string; last_name: string };
 type EventSummary = { event_type: string; event_date: string; clients: ClientName };
@@ -110,7 +111,7 @@ export default async function RevenuePage() {
         <p><strong>{awaitingResponse.length}</strong> awaiting response · <strong>{expiring.length}</strong> expiring within 7 days</p>
         {awaitingResponse.slice(0, 8).map(({ quote, version }) => <Link className="crm-record-row" key={quote.id} href={`/crm/quotes/${quote.id}`}>
           <span><strong>Quote #{quote.quote_number}</strong><small>{quote.events ? `${quote.events.clients.first_name} ${quote.events.clients.last_name} · ${quote.events.event_type}` : label(version.status)}</small></span>
-          <span>{money(version.total_cents)} · {version.expires_at ? `expires ${new Date(version.expires_at).toLocaleDateString()}` : "no expiry"}</span>
+          <span>{money(version.total_cents)} · {version.expires_at ? `expires ${formatEtDate(version.expires_at)}` : "no expiry"}</span>
         </Link>)}
         {!awaitingResponse.length && <Empty>No proposals are awaiting a response.</Empty>}
       </section>
@@ -130,7 +131,7 @@ export default async function RevenuePage() {
       <section className="crm-panel">
         <h2>Follow-ups and delivery</h2>
         <p><strong>{actions.length}</strong> follow-ups due · <strong>{communications.length}</strong> queued or failed messages</p>
-        {actions.slice(0, 6).map((action) => <p key={action.id}><strong>{action.name}</strong> · {label(action.status)} · {new Date(action.due_at).toLocaleString()}</p>)}
+        {actions.slice(0, 6).map((action) => <p key={action.id}><strong>{action.name}</strong> · {label(action.status)} · {formatEtDateTime(action.due_at)}</p>)}
         {communications.slice(0, 6).map((message) => <p key={message.id}><strong>{label(message.status)}</strong> · {message.subject || "Transactional message"} · {message.recipient}</p>)}
         {!actions.length && !communications.length && <Empty>No customer follow-up needs attention.</Empty>}
         <p><Link href="/crm/communications">Open communications center →</Link></p>
@@ -138,7 +139,7 @@ export default async function RevenuePage() {
       <section className="crm-panel">
         <h2>Recently paid</h2>
         {payments.map((payment) => <Link className="crm-record-row" key={payment.id} href={`/crm/events/${payment.event_financials.event_id}#financials`}>
-          <span><strong>{payment.event_financials.events.event_type}</strong><small>{payment.event_financials.events.clients.first_name} {payment.event_financials.events.clients.last_name} · {new Date(payment.occurred_at).toLocaleDateString()}</small></span>
+          <span><strong>{payment.event_financials.events.event_type}</strong><small>{payment.event_financials.events.clients.first_name} {payment.event_financials.events.clients.last_name} · {formatEtDate(payment.occurred_at)}</small></span>
           <span>{money(payment.amount_cents)}</span>
         </Link>)}
         {!payments.length && <Empty>No payments posted in the last 14 days.</Empty>}
