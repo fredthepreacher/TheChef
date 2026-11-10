@@ -601,6 +601,29 @@ Both run against the same hosted schema today. They must be merged and re-verifi
   - the quote "Expires" field
 - **F-3 (copy):** the event's readiness tile still says "Deposit / payment — Not tracked in Phase 2" after financials exist. Also, the event page's Quote card says "Create a quote from the original inquiry." with no button; the button is on the lead page.
 - **F-4 (to check before automations are switched on):** proposal follow-up scheduled actions for superseded or declined versions stay "awaiting approval". Three remained for v1–v3 after v3 was accepted. Not verified whether approving one for a superseded version would queue an email.
+  - Code review afterwards confirmed it would: `process_due_scheduled_actions` never checked the version's status, so an approved follow-up for an answered or replaced proposal would queue "A note about your catering proposal" to the client.
+
+**Fixes for F-1 to F-4: commit `90a6b2a` (2026-11-10), after this acceptance run.**
+- **F-1:** the proposal page shows actions only while the version is `sent`/`viewed`, the states the token RPCs accept (`PROPOSAL_OPEN_STATUSES`). Otherwise it shows a status notice, e.g. "You asked for changes. The Chef is preparing a revised proposal…".
+- **F-2:** new `lib/crm/time.ts`. Every CRM timestamp shows in Eastern with an "ET" label, the zone the database schedules in.
+  - This also fixed a real input bug: `datetime-local` values (quote expiry, COI due, new-task due) were stored as UTC wall time. A typed "5:00 PM" became 12:00 PM ET.
+  - They are now read and written as Eastern, DST-aware, and the inputs are labelled "(ET)".
+- **F-3:** the Deposit / payment tile reflects `event_financials` (e.g. "Deposit of $705.60 pending", "Deposit received · $1,646.40 balance remaining") and stays unscored. The event's Quote card has a "Create quote" button.
+- **F-4:** migration **`20261110200000_cancel_stale_proposal_follow_ups.sql`** (additive). It:
+  - cancels a version's open follow-ups when its status leaves `sent`/`viewed`
+  - guards `process_due_scheduled_actions`, which now cancels instead of sending for a closed proposal
+  - cancels any stale follow-ups already queued
+  - **Not yet applied to hosted.** A read-only dry run shows it is the only pending migration.
+- Verification:
+  - `npm test`: 52 tests, **51 pass, 0 fail**, 1 skipped (opt-in HTTP suite), including the new time, readiness and follow-up tests.
+  - The follow-up test fails without the migration ("a declined proposal's follow-up is cancelled"), so it guards the fix.
+  - HTTP suite against a local `next start`: 9/9.
+  - typecheck, lint and build pass; both `npm audit` runs: 0 vulnerabilities; tracked-file secret scan (220 files): 0 findings.
+- **Hosted re-check still to do:**
+  - apply the migration after owner approval
+  - push so the preview rebuilds
+  - one labelled proposal round-trip on the preview: revision request hides the actions; follow-ups are cancelled; ET times; the deposit tile
+  - clean up afterwards
 
 **Not covered by this run:**
 - a Thanksgiving-mode submission on hosted (it needs a second human Turnstile check; covered by the automated tests)
