@@ -15,7 +15,7 @@
 - The provider-independent hosted end-to-end acceptance of the merged Website + CRM candidate **passes**. It includes Chef's new-inquiry alert queuing.
 - Migration `20261109220000_owner_inquiry_notification` is applied to hosted; migration history was then 9/9.
 - The four non-blocking findings (F-1 to F-4) are fixed in `90a6b2a`. Migration `20261110200000` was applied (history now **10/10**), and the fixes were re-verified on the hosted preview at 16:01–16:26 ET.
-- Two further non-blocking findings (F-5 expiry reset on issue, F-6 CRM Approve/Cancel buttons) are fixed on the branch in `9dd1e75` (app-only, no migration). Local tests pass; **not yet pushed or re-verified on hosted**.
+- Two further non-blocking findings (F-5 expiry reset on issue, F-6 CRM Approve/Cancel buttons) are fixed in `9dd1e75` (app-only, no migration), pushed, and **verified on the hosted preview** (`dpl_2179fzPZp9roFXfmyYc7p7F38een`, 20:17–20:29 ET). Test data cleaned back to the baseline.
 - All test data was cleaned back to the recorded baseline.
 - The Supabase org is now on the **Pro plan**, so no project swap was needed: Chef stays running and `wavysites-web` was never paused.
 - Stripe, Resend delivery and AI Gateway are still pending, so Phase 3 remains **NOT HOSTED PASSED**.
@@ -635,11 +635,19 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 - **New findings from the re-check (predate today's fixes):**
   - **F-5:** issuing a proposal resets its expiry to 14 days from issue, overriding the operator's Expires value.
   - **F-6:** the CRM Approve / Cancel buttons for scheduled actions fail validation on hosted. The clicked button's `approved` value is not received by the server action; Enable/Disable rule buttons share the pattern.
-- **F-5 and F-6 fixed in `9dd1e75`** (local; not yet pushed or re-verified on hosted):
+- **F-5 and F-6 fixed in `9dd1e75`**, pushed (`528e034..7bde8dd`) and verified on hosted:
   - **F-5:** `issueProposal` now passes the saved Expires date to `prepare_and_issue_proposal`. It defaults to 14 days only when none is saved, and refuses a date that has already passed rather than replacing it. The issue panel states the expiry that will be used. App-only; no migration.
   - **F-6 root cause** (reproduced locally in a clean browser with a probe page, then removed): these forms carry `<input name="id">`, so `form.id` returns that element instead of a string. React adds the clicked button's value through a temporary input and, when `form.id` is truthy, sets `form="[object HTMLInputElement]"` on it. That detaches the input, so its value is never submitted. The decision now travels in a hidden input per form. Forms without a control named `id` (client proposal page, Stripe link buttons) were never affected.
   - New tests `tests/proposal-expiry.test.ts` and `tests/form-submitter.test.ts` fail on the old code and pass on the fix. Full suite 57 pass / 0 fail / 1 skipped (needs production credentials); typecheck, lint and production build pass.
-  - Hosted check still to do: issue a labelled proposal with a custom Expires date, then Approve and Cancel one follow-up each and toggle one rule twice. Clean up afterwards.
+  - **Hosted check PASSED** (preview `dpl_2179fzPZp9roFXfmyYc7p7F38een`, commit `7bde8dd`, 2026-11-10 20:17–20:29 ET). One labelled lead was seeded through the intake function. Quote #6 v1 and v2 were then driven through the CRM in the owner's Chrome:
+    - F-5, custom date: Expires set to 4 Dec 2026 5:30 PM ET. The panel showed that date. After issuing, the version **and** client link both expire at `2026-12-04T22:30Z`, and the client page shows "Valid through 12/4/2026."
+    - F-5, no date: v2 with Expires cleared. The panel said "14 days after issue". Issued at 01:25:04Z, it expires at 01:25:04Z on 25 Nov (exactly 14 days).
+    - F-5, past date: Expires set to 8:20 PM ET, already passed. The panel showed the alert and disabled the button. A forced submit was refused (`error=expiry`, specific message), and the quote stayed Draft.
+    - F-6, Approve: "Changes saved."; the follow-up moved to Pending. When v2 replaced v1, it was then cancelled automatically ("Proposal no longer awaiting a response").
+    - F-6, Cancel: "Changes saved."; the v2 follow-up moved to Cancelled.
+    - F-6, rule toggle: Review request Disable, then Enable, both saved. All six rules ended active; Review request's `updated_at` moved to 01:24:15Z.
+    - **0** follow-up emails. The only queued email was the test client's own inquiry acknowledgment (`example.invalid`, never sent).
+  - Cleanup: guarded, dry run first, committed 20:29:18–20:29:28 ET. Every count identical to the baseline; 38 triggers, 0 disabled; next quote #6. Chef and `wavysites-web` ACTIVE_HEALTHY; `wavysites.com/api/health` `{"ok":true}`.
 
 **Not covered by this run:**
 - a Thanksgiving-mode submission on hosted (it needs a second human Turnstile check; covered by the automated tests)
