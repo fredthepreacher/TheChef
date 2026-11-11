@@ -19,6 +19,7 @@ import {
   quoteSettingsSchema,
   quoteLineItemSchema,
   proposalIssueSchema,
+  proposalExpiry,
   manualPaymentSchema,
 } from "@/lib/crm/domain";
 export async function login(form: FormData) {
@@ -214,7 +215,15 @@ export async function issueProposal(form: FormData) {
   const contentHash = createHash("sha256")
     .update(JSON.stringify(snapshot))
     .digest("hex");
-  const expiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+  // F-5: honour the saved Expires date instead of always resetting it to 14 days.
+  const { data: version, error: versionError } = await db
+    .from("quote_versions")
+    .select("expires_at")
+    .eq("id", parsed.data.quote_version_id)
+    .maybeSingle();
+  if (versionError || !version) redirect(`/crm/quotes/${parsed.data.quote_id}?error=issue`);
+  const expiresAt = proposalExpiry(version.expires_at as string | null);
+  if (!expiresAt) redirect(`/crm/quotes/${parsed.data.quote_id}?error=expiry`);
   const { error } = await db.rpc("prepare_and_issue_proposal", {
     p_quote_version_id: parsed.data.quote_version_id,
     p_agreement_snapshot: snapshot,

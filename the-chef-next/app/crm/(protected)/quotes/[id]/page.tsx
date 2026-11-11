@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireOperator } from "@/lib/auth/require-operator";
 import { addQuoteLineItem, createQuoteRevision, issueProposal, revokeProposal, updateQuoteSettings } from "@/app/crm/actions";
 import { Activity, Notice } from "@/components/crm/Shared";
-import { label, money, type Client, type QuoteLineItem, type QuoteVersion } from "@/lib/crm/domain";
+import { DEFAULT_PROPOSAL_VALID_DAYS, label, money, proposalExpiry, type Client, type QuoteLineItem, type QuoteVersion } from "@/lib/crm/domain";
 import { formatEtDateTime, toEtInputValue } from "@/lib/crm/time";
 
 type ProposalResponse = {
@@ -55,6 +55,8 @@ export default async function QuoteDetailPage({ params, searchParams }: {
   const responses = (responseError ? [] : responseData ?? []) as ProposalResponse[];
   const p = await searchParams;
   const editable = version.status === "draft";
+  // F-5: issuing uses the saved Expires date; say so before the operator issues.
+  const issueExpiry = editable ? proposalExpiry(version.expires_at) : null;
   const proposalUrl = p.proposal
     ? `${process.env.APP_ORIGIN ?? ""}${p.proposal}`
     : null;
@@ -151,7 +153,14 @@ export default async function QuoteDetailPage({ params, searchParams }: {
             <label>Agreement terms<textarea name="agreement_terms" minLength={20} maxLength={50000} required /></label>
             <input type="hidden" name="queue_email" value="false" />
             <label className="crm-inline-check"><input type="checkbox" name="queue_email" value="true" /> Queue the proposal email after issuing</label>
-            <button disabled={!items.length || version.total_cents <= 0}>Lock and issue proposal</button>
+            <p className={issueExpiry ? "crm-muted" : "crm-notice"} role={issueExpiry ? undefined : "alert"}>
+              {!issueExpiry
+                ? "The Expires date above has already passed. Set a later date (or clear it) and save before issuing."
+                : version.expires_at
+                  ? `The proposal and its client link will expire ${formatEtDateTime(issueExpiry)}, the Expires date above.`
+                  : `No Expires date is saved, so the proposal and its client link will expire ${DEFAULT_PROPOSAL_VALID_DAYS} days after issue.`}
+            </p>
+            <button disabled={!items.length || version.total_cents <= 0 || !issueExpiry}>Lock and issue proposal</button>
           </form>
         </section>
       )}

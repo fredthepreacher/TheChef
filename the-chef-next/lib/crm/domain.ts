@@ -429,6 +429,19 @@ export const proposalIssueSchema = z.object({
   agreement_terms: z.string().trim().min(20).max(50000),
   queue_email: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
+/** How long a proposal link stays valid when no Expires date is saved. */
+export const DEFAULT_PROPOSAL_VALID_DAYS = 14;
+/**
+ * F-5: issuing keeps the operator's saved Expires date for both the version and
+ * the client link. Only when none is saved does it default to 14 days from issue.
+ * Returns null when the saved date has already passed — the operator must pick a
+ * new one rather than have it silently replaced.
+ */
+export function proposalExpiry(saved: string | null | undefined, now: Date = new Date()): string | null {
+  if (!saved) return new Date(now.getTime() + DEFAULT_PROPOSAL_VALID_DAYS * 86_400_000).toISOString();
+  const at = new Date(saved).getTime();
+  return Number.isFinite(at) && at > now.getTime() ? new Date(at).toISOString() : null;
+}
 export const manualPaymentSchema = z.object({
   event_id: z.uuid(),
   event_financial_id: z.uuid(),

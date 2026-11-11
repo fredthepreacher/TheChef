@@ -2,11 +2,15 @@ import Link from "next/link";
 import { requireOperator } from "@/lib/auth/require-operator";
 import { label } from "@/lib/crm/domain";
 import { formatEtDateTime } from "@/lib/crm/time";
+const SPECIFIC_ERRORS: Record<string, string> = {
+  expiry:
+    "The proposal's Expires date has already passed. Set a later date in Proposal settings and save, or clear it to use 14 days from issue, then issue again.",
+};
 export function Notice({ error, saved }: { error?: string; saved?: string }) {
   return error ? (
     <p className="crm-notice" role="alert">
-      Could not save. Check required fields and try again. Closed leads cannot
-      become events.
+      {SPECIFIC_ERRORS[error] ??
+        "Could not save. Check required fields and try again. Closed leads cannot become events."}
     </p>
   ) : saved ? (
     <p className="crm-notice" role="status">

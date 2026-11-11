@@ -25,7 +25,9 @@ export default async function CommunicationsPage({ searchParams }: {
       <div className="crm-section-heading"><div><h2>Automation rules</h2><p className="crm-muted">Rules begin disabled. Every current rule requires operator approval.</p></div></div>
       {rules?.map((rule) => <div className="crm-record-row" key={rule.id}>
         <span><strong>{rule.name}</strong><small>{label(rule.trigger_key)} → {label(rule.action_key)} · {rule.delay_minutes} minute delay · approval required</small></span>
-        <form action={updateAutomationRule}><input type="hidden" name="id" value={rule.id} /><button name="active" value={String(!rule.active)} className="crm-secondary">{rule.active ? "Disable" : "Enable"}</button></form>
+        {/* The decision travels in a hidden input, never on the button (F-6): a control named "id"
+            makes form.id an element, and React then drops the clicked button's name/value. */}
+        <form action={updateAutomationRule}><input type="hidden" name="id" value={rule.id} /><input type="hidden" name="active" value={String(!rule.active)} /><button className="crm-secondary">{rule.active ? "Disable" : "Enable"}</button></form>
       </div>)}
     </section>
     <section className="crm-panel">
@@ -33,8 +35,8 @@ export default async function CommunicationsPage({ searchParams }: {
       {((scheduled ?? []) as ScheduledAction[]).map((action) => <div className="crm-record-row" key={action.id}>
         <span><strong>{action.name}</strong><small>{label(action.status)} · due {formatEtDateTime(action.due_at)}</small></span>
         {action.status === "awaiting_approval" && <div className="crm-row-actions">
-          <form action={decideScheduledAction}><input type="hidden" name="id" value={action.id} /><button name="approved" value="true">Approve</button></form>
-          <form action={decideScheduledAction}><input type="hidden" name="id" value={action.id} /><button name="approved" value="false" className="crm-secondary">Cancel</button></form>
+          <form action={decideScheduledAction}><input type="hidden" name="id" value={action.id} /><input type="hidden" name="approved" value="true" /><button>Approve</button></form>
+          <form action={decideScheduledAction}><input type="hidden" name="id" value={action.id} /><input type="hidden" name="approved" value="false" /><button className="crm-secondary">Cancel</button></form>
         </div>}
       </div>)}
       {!((scheduled ?? []) as ScheduledAction[]).length && <p>No scheduled actions.</p>}
