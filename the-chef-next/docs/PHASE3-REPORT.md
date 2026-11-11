@@ -15,7 +15,7 @@
 - The provider-independent hosted end-to-end acceptance of the merged Website + CRM candidate **passes**. It includes Chef's new-inquiry alert queuing.
 - Migration `20261109220000_owner_inquiry_notification` is applied to hosted; migration history was then 9/9.
 - The four non-blocking findings (F-1 to F-4) are fixed in `90a6b2a`. Migration `20261110200000` was applied (history now **10/10**), and the fixes were re-verified on the hosted preview at 16:01–16:26 ET.
-- Two new non-blocking findings (F-5 expiry reset on issue, F-6 CRM Approve/Cancel buttons) are open.
+- Two further non-blocking findings (F-5 expiry reset on issue, F-6 CRM Approve/Cancel buttons) are fixed on the branch in `9dd1e75` (app-only, no migration). Local tests pass; **not yet pushed or re-verified on hosted**.
 - All test data was cleaned back to the recorded baseline.
 - The Supabase org is now on the **Pro plan**, so no project swap was needed: Chef stays running and `wavysites-web` was never paused.
 - Stripe, Resend delivery and AI Gateway are still pending, so Phase 3 remains **NOT HOSTED PASSED**.
@@ -632,9 +632,14 @@ Both run against the same hosted schema today. They must be merged and re-verifi
   - F-1 to F-4 all verified on hosted. **No "A note about your catering proposal" email was ever created**, even after forcing all four follow-ups back to approved-and-due and running the processor.
   - Cleanup back to the baseline (16:25:56–16:26:05 ET).
   - Step-by-step results: launch runbook §13, "Hosted re-check of F-1 to F-4".
-- **New findings from the re-check (predate today's fixes, not fixed):**
+- **New findings from the re-check (predate today's fixes):**
   - **F-5:** issuing a proposal resets its expiry to 14 days from issue, overriding the operator's Expires value.
   - **F-6:** the CRM Approve / Cancel buttons for scheduled actions fail validation on hosted. The clicked button's `approved` value is not received by the server action; Enable/Disable rule buttons share the pattern.
+- **F-5 and F-6 fixed in `9dd1e75`** (local; not yet pushed or re-verified on hosted):
+  - **F-5:** `issueProposal` now passes the saved Expires date to `prepare_and_issue_proposal`. It defaults to 14 days only when none is saved, and refuses a date that has already passed rather than replacing it. The issue panel states the expiry that will be used. App-only; no migration.
+  - **F-6 root cause** (reproduced locally in a clean browser with a probe page, then removed): these forms carry `<input name="id">`, so `form.id` returns that element instead of a string. React adds the clicked button's value through a temporary input and, when `form.id` is truthy, sets `form="[object HTMLInputElement]"` on it. That detaches the input, so its value is never submitted. The decision now travels in a hidden input per form. Forms without a control named `id` (client proposal page, Stripe link buttons) were never affected.
+  - New tests `tests/proposal-expiry.test.ts` and `tests/form-submitter.test.ts` fail on the old code and pass on the fix. Full suite 57 pass / 0 fail / 1 skipped (needs production credentials); typecheck, lint and production build pass.
+  - Hosted check still to do: issue a labelled proposal with a custom Expires date, then Approve and Cancel one follow-up each and toggle one rule twice. Clean up afterwards.
 
 **Not covered by this run:**
 - a Thanksgiving-mode submission on hosted (it needs a second human Turnstile check; covered by the automated tests)
