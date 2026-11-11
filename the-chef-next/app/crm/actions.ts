@@ -8,6 +8,7 @@ import { configured, serverClient } from "@/lib/supabase/server";
 import { stripeClient } from "@/lib/payments/stripe";
 import { serviceClient } from "@/lib/supabase/service";
 import { requireOperator } from "@/lib/auth/require-operator";
+import { dispatchQueuedEmails } from "@/lib/email/dispatch";
 import {
   stageSchema,
   eventSchema,
@@ -460,15 +461,14 @@ export async function processDueAutomations() {
 
 export async function sendQueuedEmails() {
   await requireOperator();
-  const origin = process.env.APP_ORIGIN;
-  const secret = process.env.CRON_SECRET;
-  if (!origin || !secret) redirect("/crm/communications?error=email_setup");
-  const response = await fetch(`${origin}/api/internal/email/dispatch`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${secret}` },
-    cache: "no-store",
-  });
-  if (!response.ok) redirect("/crm/communications?error=email_delivery");
+  // In-process: an HTTP call to our own URL is blocked on protected previews.
+  let configuredProvider = false;
+  try {
+    configuredProvider = (await dispatchQueuedEmails()).configured;
+  } catch {
+    redirect("/crm/communications?error=email_delivery");
+  }
+  if (!configuredProvider) redirect("/crm/communications?error=email_setup");
   revalidatePath("/crm/communications");
   redirect("/crm/communications?sent=1");
 }

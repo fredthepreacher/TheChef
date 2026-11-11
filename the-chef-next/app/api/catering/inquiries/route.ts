@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { inquirySchema } from "@/lib/crm/domain";
+import { dispatchInquiryEmails } from "@/lib/email/dispatch";
 import { intakeClient } from "@/lib/supabase/intake";
 import { THANKSGIVING } from "@/data/thanksgiving";
 import { prepareInquiry } from "@/lib/catering/prepare-inquiry";
@@ -151,6 +152,17 @@ export async function POST(request: NextRequest) {
         "Your inquiry could not be saved. Please try again or call Chef.",
         503,
       );
+    // Send this inquiry's own acknowledgment and Chef alert right after the
+    // response, without delaying it. Only these two outbox items can be
+    // claimed here; anything else stays queued for the operator. With no email
+    // provider configured nothing is claimed and both stay queued.
+    after(async () => {
+      try {
+        await dispatchInquiryEmails(inquiry.request_id);
+      } catch {
+        console.error("Inquiry email dispatch failed; the messages stay queued for retry.");
+      }
+    });
     return reply(
       feast
         ? "Your Thanksgiving order request is in. Chef Frankie will confirm availability, your sides and pies, and the details with you. Your feast is not reserved until Chef confirms your order."

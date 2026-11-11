@@ -28,6 +28,13 @@ export class EmailProviderNotConfiguredError extends Error {
   }
 }
 
+/** True when Resend can be used (key, From and Reply-To are all set). */
+export function emailProviderConfigured(): boolean {
+  return Boolean(
+    process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL && process.env.RESEND_REPLY_TO_EMAIL,
+  );
+}
+
 export function configuredEmailProvider(): EmailProvider {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
