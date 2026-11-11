@@ -11,6 +11,28 @@
 - **Stripe test mode, Resend and AI Gateway are PENDING owner configuration.** They are not failed; credentials and decisions have not been supplied.
 - Phase 3 is **NOT HOSTED PASSED**.  
 
+**Update 2026-11-11 (owner decisions: payments and providers):**
+- **Phase 3 core acceptance is GREEN** (owner, 2026-11-10). Core CRM functionality is **frozen**: no feature changes unless a real regression is found.
+- **Stripe: DEFERRED (Chef-owned account required).** Not failed, and not pending Wavy Sites credentials.
+  - All customer payments must go directly to payment accounts owned by The Chef.
+  - Wavy Sites LLC's Stripe account, or any Wavy Sites merchant account or payment credential, must never be used for Chef customers.
+  - Stripe test acceptance is removed from the release blockers. It resumes only if Chef provides his own Stripe account.
+  - The Stripe code stays in the repo, dormant. With no `STRIPE_*` keys the CRM's Checkout control is disabled and `/api/stripe/webhook` rejects everything. No Stripe object, key or webhook was created for this project.
+- **Production payment workflow** (Chef-owned rails only):
+  - **Clover** is preferred for card and online payments, using a Clover invoice or payment link if Chef's Clover plan offers one. To confirm with Chef.
+  - **Zelle** and **Cash App** stay Chef-owned manual options.
+  - A payment counts as paid in the CRM **only after an operator verifies it** in Chef's own Clover, Zelle or Cash App account and posts it in the event ledger ("Record transaction", with a required audit note).
+  - Nothing is ever marked paid from customer input (screenshots, messages or redirects). Accepting a proposal only moves the event to *Deposit pending*.
+  - Enforcement verified on hosted (2026-11-11): `anon` has no insert privilege on `payment_transactions`; `authenticated` may insert only through policy `operator_insert` (`crm_private.is_operator()`). No customer-facing route writes the ledger.
+  - The ledger has no payment-method field. The operator records the rail and reference (for example "Zelle, ref ...") in the audit note. A dedicated field would be a CRM feature change and is frozen.
+- **Resend:** Chef's domain is `thechef.catering` (DNS at Spaceship).
+  - Sending subdomain `mail.thechef.catering`, From `The Chef Catering <bookings@mail.thechef.catering>`, Reply-To `Thechefcs@gmail.com`.
+  - The domain was added to the existing Wavy Sites Resend account on 2026-11-11 (status: awaiting DNS). The DNS records go to the owner for approval before Spaceship is changed.
+  - The immediate send trigger is implemented in `2720023`; migration `20261111020000_claim_inquiry_emails` was applied with owner approval (history 11/11).
+  - Resend acceptance is in progress.
+- **AI Gateway: DEFERRED** for this release unless the owner explicitly approves activating it.
+- The only open Phase 3 provider item is Resend acceptance.
+
 **Update 2026-11-10 (combined candidate `0c8fdde`, branch `feat/chef-production-integration`):**
 - The provider-independent hosted end-to-end acceptance of the merged Website + CRM candidate **passes**. It includes Chef's new-inquiry alert queuing.
 - Migration `20261109220000_owner_inquiry_notification` is applied to hosted; migration history was then 9/9.
@@ -18,7 +40,7 @@
 - Two further non-blocking findings (F-5 expiry reset on issue, F-6 CRM Approve/Cancel buttons) are fixed in `9dd1e75` (app-only, no migration), pushed, and **verified on the hosted preview** (`dpl_2179fzPZp9roFXfmyYc7p7F38een`, 20:17–20:29 ET). Test data cleaned back to the baseline.
 - All test data was cleaned back to the recorded baseline.
 - The Supabase org is now on the **Pro plan**, so no project swap was needed: Chef stays running and `wavysites-web` was never paused.
-- Stripe, Resend delivery and AI Gateway are still pending, so Phase 3 remains **NOT HOSTED PASSED**.
+- Stripe, Resend delivery and AI Gateway were still pending at that point. *(2026-11-11: Stripe and AI Gateway are now DEFERRED; see above.)*
 - See "Hosted end-to-end acceptance of the combined candidate — 2026-11-10" below.
 
 **Account scope (as of 2026-11-08; superseded by the 2026-11-10 Pro-plan note above): second swap reversed.** The free slot was swapped twice on 2026-11-08, both times with owner approval. After the second window, `the-chef-catering-crm` was paused (INACTIVE 19:36:26 local) and `wavysites-web` was resumed (**ACTIVE_HEALTHY 19:41:04 local**). Wavy Sites was smoke-tested again: `GET /api/health` → `{"ok":true}` (200); one `/start` lead `SMOKE TEST 2 — Claude (please delete)` stored at 19:41:54 (`form=project`, `status=new`, no spam flags) with its alert email sent on attempt 1. `geos-ventures's Project` was never touched. Resume the Chef project, which needs a free slot, before the next hosted Phase 3 step.  
@@ -456,9 +478,9 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 2. ~~Preview connection and real test inquiry~~: **done** (2026-11-08).
 3. ~~Core provider-independent UI path~~: **done** (Codex run).
 4. ~~Apply the D-1/D-2 fix to hosted and re-run the revision/response journey~~: **done** (2026-11-08 19:08–19:34 local, all pass).
-5. **Stripe test mode**: PENDING owner configuration (test/restricted key + webhook secret in Preview only).
+5. **Stripe test mode**: **DEFERRED** (2026-11-11): Chef-owned Stripe account required; Wavy Sites accounts never used. Not a release blocker.
 6. **Resend**: PENDING owner configuration (Chef-owned sending domain, From/Reply-To, DNS). Also requires the Chef new-inquiry notification below.
-7. **AI Gateway**: PENDING (optional, draft-only, ≤ $5/month).
+7. **AI Gateway**: **DEFERRED** for this release unless the owner approves (optional, draft-only, ≤ $5/month).
 8. Owner decision on the stable alias (see timeline above).
 9. ~~Hosted end-to-end acceptance of the merged Website + CRM candidate~~: **done** (2026-11-10, provider-independent scope, see below).
 
@@ -659,7 +681,9 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 
 Vercel project `wavysites/the-chef-catering-crm` has the Phase 1.5 Supabase, intake, origin, and Turnstile variables in **Preview**. It does not currently list the Phase 3 provider variables below. The next required boundary is Stripe TEST MODE.
 
-### Stripe TEST MODE
+### Stripe: DEFERRED (Chef-owned account required)
+
+**2026-11-11 owner decision:** do not use Wavy Sites LLC's Stripe, or any Wavy Sites payment credential, for The Chef. Stripe test acceptance is off the release-blocker list and resumes only if Chef provides his own Stripe account. The code stays dormant. The requirements below apply **only** to that future Chef-owned account.
 
 Required in Vercel Preview only:
 
@@ -709,14 +733,16 @@ Keep the approved project budget at or below $5/month. AI remains lower priority
 
 The provider-independent hosted work is complete. The following provider-backed items are **not yet claimed as hosted-passed**:
 
-- Stripe test Checkout, successful test payment, verified signed webhook, duplicate webhook, ledger and booking state.
+- ~~Stripe test Checkout, successful test payment, verified signed webhook, duplicate webhook, ledger and booking state.~~ **Deferred (2026-11-11):** needs a Chef-owned Stripe account; not a release blocker.
 - Resend provider submission/delivery/failure/idempotency using an explicitly approved non-customer recipient.
-- AI Gateway draft-only acceptance, if the optional final increment is pursued after revenue delivery.
+- ~~AI Gateway draft-only acceptance~~ **Deferred (2026-11-11)** unless the owner approves activating it.
 - Final cleanup of any Stripe test objects and provider test-email artifacts created during those increments.
 
 ## Intentionally deferred
 
 - Stripe live mode and live charges.
+- Stripe test acceptance, until Chef provides his own Stripe account. Wavy Sites payment accounts are never used for Chef.
+- AI Gateway activation, unless the owner explicitly approves it.
 - Production-domain changes or promotion.
 - Real-customer acceptance email.
 - Certified third-party e-signature provider equivalence.
@@ -791,6 +817,7 @@ Green:
   - cleanup back to baseline
 
 Blocking:
-- Stripe test mode, Resend (delivery of the acknowledgment and the now-queued Chef alert) and AI Gateway are **pending owner configuration**, not failed.
+- Resend (delivery of the acknowledgment and Chef's alert) is the remaining provider acceptance; it is in progress.
+- Stripe (Chef-owned account required) and AI Gateway are **DEFERRED**, not failed.
 
 Phase 4 has not begun. `main` and the production domain are untouched.
