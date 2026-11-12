@@ -51,7 +51,7 @@
   - **No test data remains.** All 33 checked tables match the pre-test baseline, re-checked after the webhook was removed.
     - Resend's sent-email log keeps the 4 test messages; sent emails can't be deleted there.
     - The owner inbox holds 2 alerts marked "TEST … (please delete)".
-  - The Resend key "The Chef Preview" still exists in the Resend account but is no longer stored in Vercel. The owner may revoke it there.
+  - **Resend key "The Chef Preview" revoked** (2026-11-12, owner-approved). Resend now lists only the account's two Wavy Sites keys, which were not changed. The earlier preview deployment `dpl_FMeSheZwq81qGTVJmeUusBzF8AxR` was built with that key, so it can no longer send.
   - Production email will use a new key and a new webhook on the real domain; see the launch runbook §14 "At release".
 
 **Update 2026-11-11 (owner decisions: payments and providers):**
