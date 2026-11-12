@@ -13,7 +13,7 @@
 
 **Update 2026-11-11, evening ET (Resend provider acceptance): PASS on the preview.**
 - Window: 20:15–20:26 ET (01:15–01:26 UTC on 2026-11-12).
-- Deployment: `thechef` Preview `dpl_FMeSheZwq81qGTVJmeUusBzF8AxR` at `2720023`, branch alias `thechef-git-feat-chef-production-integration-wavysites.vercel.app`.
+- Deployment: `thechef` Preview `dpl_FMeSheZwq81qGTVJmeUusBzF8AxR` at `2720023` (the Resend secrets were removed after acceptance), branch alias `thechef-git-feat-chef-production-integration-wavysites.vercel.app`.
 - Setup:
   - The domain `mail.thechef.catering` is **verified** in Resend.
   - API key "The Chef Preview" (Sending access, limited to `mail.thechef.catering`).
@@ -41,8 +41,18 @@
      - In the real retry path (the send call fails after Resend accepted it), the failed attempt has no message ID, so the retry completes normally and no duplicate is sent. The test row was deleted in cleanup.
   2. An item left in `processing` is never reclaimed automatically. This only happens if the completion write fails after a successful send. There's no duplicate risk, but the CRM would show that message as unsent. It's a candidate for a later hardening increment, not a release blocker.
   3. Chef's alert email still says the customer acknowledgment "is queued separately". It is now sent immediately, so this is a copy tweak for a later increment.
-  4. **Security:** during setup, Resend's dashboard put the webhook endpoint, including the Vercel automation-bypass token, in a browser tab title, and it appeared in Claude's local tool output. It is not in the repo, chat or any commit. **Rotate "Protection Bypass for Automation" in Vercel after the acceptance webhook is removed** (nothing in the code uses the token).
-- **Remaining owner actions:** remove the acceptance webhook (acceptance window only) and rotate the bypass token. Production Resend configuration is a release step; see the launch runbook.
+  4. **Security:** during setup, Resend's dashboard put the webhook endpoint, including the Vercel automation-bypass token, in a browser tab title, and it appeared in Claude's local tool output. It is not in the repo, chat or any commit. **Done (2026-11-11 ET):** the exposed token was revoked and replaced after the webhook was removed (nothing in the code uses the token).
+- **Closure (2026-11-11 ET, owner-approved):**
+  - **Resend acceptance: PASSED.**
+  - **Acceptance webhook removed.** Resend answers 404 for it, and its webhook list has no Chef endpoint or bypass parameter.
+  - **Vercel automation-bypass token rotated.** The exposed token is revoked. A new token, never displayed, is the only automation bypass on `thechef` and is set as `VERCEL_AUTOMATION_BYPASS_SECRET` on deployments.
+  - **Both temporary Resend secrets removed** from the branch's Preview environment (`RESEND_WEBHOOK_SECRET`, `RESEND_API_KEY`). New preview deployments have no Resend credentials, so preview inquiries keep their emails queued instead of sending. The non-secret `RESEND_FROM_EMAIL`, `RESEND_REPLY_TO_EMAIL` and `CHEF_NOTIFICATION_EMAIL` stay on Preview.
+  - **Production credentials unchanged.** `thechef` Production still has no environment variables.
+  - **No test data remains.** All 33 checked tables match the pre-test baseline, re-checked after the webhook was removed.
+    - Resend's sent-email log keeps the 4 test messages; sent emails can't be deleted there.
+    - The owner inbox holds 2 alerts marked "TEST … (please delete)".
+  - The Resend key "The Chef Preview" still exists in the Resend account but is no longer stored in Vercel. The owner may revoke it there.
+  - Production email will use a new key and a new webhook on the real domain; see the launch runbook §14 "At release".
 
 **Update 2026-11-11 (owner decisions: payments and providers):**
 - **Phase 3 core acceptance is GREEN** (owner, 2026-11-10). Core CRM functionality is **frozen**: no feature changes unless a real regression is found.
