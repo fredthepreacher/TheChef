@@ -11,6 +11,39 @@
 - **Stripe test mode, Resend and AI Gateway are PENDING owner configuration.** They are not failed; credentials and decisions have not been supplied.
 - Phase 3 is **NOT HOSTED PASSED**.  
 
+**Update 2026-11-11, evening ET (Resend provider acceptance): PASS on the preview.**
+- Window: 20:15–20:26 ET (01:15–01:26 UTC on 2026-11-12).
+- Deployment: `thechef` Preview `dpl_FMeSheZwq81qGTVJmeUusBzF8AxR` at `2720023`, branch alias `thechef-git-feat-chef-production-integration-wavysites.vercel.app`.
+- Setup:
+  - The domain `mail.thechef.catering` is **verified** in Resend.
+  - API key "The Chef Preview" (Sending access, limited to `mail.thechef.catering`).
+  - `RESEND_API_KEY` and `RESEND_WEBHOOK_SECRET` are stored as **Sensitive**, Preview only, scoped to branch `feat/chef-production-integration`. None of the Chef Resend variables exists on Production.
+  - The owner pasted both secret values. They are not in the repo, logs or chat.
+  - A temporary Resend webhook (sent, delivered, delivery_delayed, bounced, complained, failed) pointed at the preview's `/api/resend/webhook` with the Vercel automation-bypass parameter, for this acceptance window only.
+- Recipients: only Resend's test addresses (`delivered@resend.dev`, `bounced@resend.dev`) and the owner inbox (Chef alerts). No real customer was emailed.
+- Each Turnstile token was issued without an interactive check.
+
+| Check | Result |
+|---|---|
+| Inquiry A: real Turnstile, customer `delivered@resend.dev` | 201. The acknowledgment and Chef's alert were claimed and sent within about 0.7 s of the save (immediate trigger), and both were delivered about 3 s later |
+| Sender and routing (checked in Resend) | From `The Chef Catering <bookings@mail.thechef.catering>`, Reply-To `Thechefcs@gmail.com`. Chef's alert went to the owner inbox `thechefcs@gmail.com` with the CRM lead link |
+| Signed webhooks | 4 events (2 `email.sent`, 2 `email.delivered`) verified with `RESEND_WEBHOOK_SECRET` and recorded once each. Resend shows every delivery as *success*. Both attempts were marked `delivered` |
+| Failure: inquiry B to `bounced@resend.dev` | 201. The acknowledgment bounced: `email.bounced` webhook, attempt `bounced`, communication `failed`. Chef's alert for B was delivered |
+| Webhook replay (same `svix-id`) | Resend's replay was accepted; no new row was recorded and no status changed (deduplicated) |
+| Identical resubmission (same `request_id`, fresh Turnstile token) | 201, idempotent: no new lead, outbox item or email |
+| Same `request_id`, different details | 409 "This request was already used"; nothing created |
+| Provider idempotency key | Inquiry A's delivered acknowledgment was forced back to `failed` and retried with the CRM's "Send queued emails". Resend honoured the idempotency key: no second email (Resend still lists exactly 4 Chef emails) |
+| Cleanup | Guarded, atomic cleanup (dry run first). Every table is back to the pre-test baseline: no clients, leads, outbox items or webhook events; activity log 17; quote numbering 5 |
+
+- **Observations (no code changed; the CRM is frozen):**
+  1. The forced retry left the test outbox item in `processing`. Resend returned the original message ID, and unique index `email_delivery_provider_idx (provider, provider_message_id)` rejected a second attempt row carrying the same ID, so the completion rolled back.
+     - This state can't arise in normal operation: a recorded success is never claimed again.
+     - In the real retry path (the send call fails after Resend accepted it), the failed attempt has no message ID, so the retry completes normally and no duplicate is sent. The test row was deleted in cleanup.
+  2. An item left in `processing` is never reclaimed automatically. This only happens if the completion write fails after a successful send. There's no duplicate risk, but the CRM would show that message as unsent. It's a candidate for a later hardening increment, not a release blocker.
+  3. Chef's alert email still says the customer acknowledgment "is queued separately". It is now sent immediately, so this is a copy tweak for a later increment.
+  4. **Security:** during setup, Resend's dashboard put the webhook endpoint, including the Vercel automation-bypass token, in a browser tab title, and it appeared in Claude's local tool output. It is not in the repo, chat or any commit. **Rotate "Protection Bypass for Automation" in Vercel after the acceptance webhook is removed** (nothing in the code uses the token).
+- **Remaining owner actions:** remove the acceptance webhook (acceptance window only) and rotate the bypass token. Production Resend configuration is a release step; see the launch runbook.
+
 **Update 2026-11-11 (owner decisions: payments and providers):**
 - **Phase 3 core acceptance is GREEN** (owner, 2026-11-10). Core CRM functionality is **frozen**: no feature changes unless a real regression is found.
 - **Stripe: DEFERRED (Chef-owned account required).** Not failed, and not pending Wavy Sites credentials.
@@ -27,11 +60,11 @@
   - The ledger has no payment-method field. The operator records the rail and reference (for example "Zelle, ref ...") in the audit note. A dedicated field would be a CRM feature change and is frozen.
 - **Resend:** Chef's domain is `thechef.catering` (DNS at Spaceship).
   - Sending subdomain `mail.thechef.catering`, From `The Chef Catering <bookings@mail.thechef.catering>`, Reply-To `Thechefcs@gmail.com`.
-  - The domain was added to the existing Wavy Sites Resend account on 2026-11-11 (status: awaiting DNS). The DNS records go to the owner for approval before Spaceship is changed.
+  - The domain was added to the existing Wavy Sites Resend account on 2026-11-11. The owner approved the DNS records, they were added at Spaceship, and the domain is **verified**.
   - The immediate send trigger is implemented in `2720023`; migration `20261111020000_claim_inquiry_emails` was applied with owner approval (history 11/11).
-  - Resend acceptance is in progress.
+  - Resend acceptance **PASSED** on the preview (2026-11-11 evening ET; see the update above).
 - **AI Gateway: DEFERRED** for this release unless the owner explicitly approves activating it.
-- The only open Phase 3 provider item is Resend acceptance.
+- No Phase 3 provider item is open: Resend passed, and Stripe and AI Gateway are deferred by owner decision.
 
 **Update 2026-11-10 (combined candidate `0c8fdde`, branch `feat/chef-production-integration`):**
 - The provider-independent hosted end-to-end acceptance of the merged Website + CRM candidate **passes**. It includes Chef's new-inquiry alert queuing.
@@ -479,7 +512,7 @@ Both run against the same hosted schema today. They must be merged and re-verifi
 3. ~~Core provider-independent UI path~~: **done** (Codex run).
 4. ~~Apply the D-1/D-2 fix to hosted and re-run the revision/response journey~~: **done** (2026-11-08 19:08–19:34 local, all pass).
 5. **Stripe test mode**: **DEFERRED** (2026-11-11): Chef-owned Stripe account required; Wavy Sites accounts never used. Not a release blocker.
-6. **Resend**: PENDING owner configuration (Chef-owned sending domain, From/Reply-To, DNS). Also requires the Chef new-inquiry notification below.
+6. **Resend**: **PASSED** on the preview (2026-11-11 evening ET): delivery, Chef's immediate alert, bounce handling, signed webhooks and idempotency. See the update at the top.
 7. **AI Gateway**: **DEFERRED** for this release unless the owner approves (optional, draft-only, ≤ $5/month).
 8. Owner decision on the stable alias (see timeline above).
 9. ~~Hosted end-to-end acceptance of the merged Website + CRM candidate~~: **done** (2026-11-10, provider-independent scope, see below).
@@ -718,6 +751,7 @@ The owner must first provide the Chef-owned domain/subdomain and desired From/Re
        - Resend must be configured
        - a send trigger is needed for the "immediate" part. Today queued mail only goes out via the CRM's "Send queued emails" or the `CRON_SECRET` endpoint, and Vercel Hobby crons run at most daily.
      - Not yet hosted-passed.
+   - **Update 2026-11-11 (ET): all done.** Owner address set (`CHEF_NOTIFICATION_EMAIL`), Resend configured on the preview, immediate send trigger in `2720023`. Delivery was accepted on the preview; see the top of this report.
 3. No real customer receives a test email. Acceptance must use provider-designated test recipients or an owner-approved non-customer address; the outbox "Send queued emails" action must not be run while real inquiries are queued.
 
 ### Vercel AI Gateway
@@ -734,7 +768,7 @@ Keep the approved project budget at or below $5/month. AI remains lower priority
 The provider-independent hosted work is complete. The following provider-backed items are **not yet claimed as hosted-passed**:
 
 - ~~Stripe test Checkout, successful test payment, verified signed webhook, duplicate webhook, ledger and booking state.~~ **Deferred (2026-11-11):** needs a Chef-owned Stripe account; not a release blocker.
-- Resend provider submission/delivery/failure/idempotency using an explicitly approved non-customer recipient.
+- ~~Resend provider submission/delivery/failure/idempotency using an explicitly approved non-customer recipient.~~ **Passed (2026-11-11 ET)** with Resend test addresses and the owner inbox.
 - ~~AI Gateway draft-only acceptance~~ **Deferred (2026-11-11)** unless the owner approves activating it.
 - Final cleanup of any Stripe test objects and provider test-email artifacts created during those increments.
 
@@ -817,7 +851,8 @@ Green:
   - cleanup back to baseline
 
 Blocking:
-- Resend (delivery of the acknowledgment and Chef's alert) is the remaining provider acceptance; it is in progress.
+- None among the providers. Resend **passed** on the preview (2026-11-11 ET).
 - Stripe (Chef-owned account required) and AI Gateway are **DEFERRED**, not failed.
+- Every release-scope Phase 3 acceptance item has now passed or been deferred by the owner.
 
 Phase 4 has not begun. `main` and the production domain are untouched.
