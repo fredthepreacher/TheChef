@@ -19,13 +19,13 @@ function showDate(iso: string) {
  * the original split CSS contract stays untouched; all visible copy says
  * Entertainer / Music).
  */
-export default function RapperWorld({ navVisible }: { navVisible: boolean }) {
+export default function RapperWorld() {
   const booking = ENTERTAINER_BOOKING;
   const hasShows = UPCOMING_SHOWS.length > 0;
 
   return (
     <section className="world rapper" id="rapperWorld">
-      <nav className={`nav rapper-nav${navVisible ? " visible" : ""}`} id="rapperNav" aria-label="Entertainer">
+      <nav className="nav rapper-nav" id="rapperNav" aria-label="Entertainer">
         <div className="nav-inner">
           <span className="nav-logo">The Chef</span>
           <a className="nav-link" href="#rapper-about">About</a>

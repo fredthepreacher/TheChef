@@ -7,7 +7,6 @@
 
 :root {
   --font-artist: 'Syne', 'DM Sans', system-ui, sans-serif;
-  --ease-lux: cubic-bezier(.22, .61, .36, 1);
   --gold-sheen: linear-gradient(100deg, #9a7429 0%, #e9c770 20%, #fff4d2 36%, #f0d080 50%, #b8913b 68%, #f6dc94 86%, #c9a84c 100%);
   --ember-sheen: linear-gradient(100deg, #ff6a2c 0%, #ffb88e 22%, #fff0e6 36%, #ff8a4c 52%, #ff5520 72%, #ffa070 100%);
 }
@@ -84,9 +83,7 @@
    background-clip:text needs the glyphs inside the box, so line-height
    is 1 with a little padding instead of the original .88.
    ──────────────────────────────────────────────────────────────── */
-.caterer-content .hero-name,
 .caterer .hero-inline .hero-name,
-.rapper-content .hero-name,
 .rapper .hero-inline .hero-name {
   line-height: 1;
   padding: .02em 0 .04em;
@@ -96,7 +93,6 @@
   color: transparent;
   text-shadow: none;
 }
-.caterer-content .hero-name,
 .caterer .hero-inline .hero-name {
   font-family: 'Cormorant Garamond', serif;
   font-weight: 400;
@@ -105,7 +101,6 @@
   background-image: linear-gradient(180deg, #ffffff 0%, #fbf3dc 40%, #ecd08a 74%, #bf9543 100%);
   filter: drop-shadow(0 0 30px rgba(232, 196, 110, .22)) drop-shadow(0 3px 3px rgba(0, 0, 0, .5));
 }
-.rapper-content .hero-name,
 .rapper .hero-inline .hero-name {
   font-family: var(--font-artist);
   font-weight: 800;
@@ -116,7 +111,6 @@
 }
 /* Intentional stacked lockup ("The / Chef") — poster energy vs. the
    single-line serif on the catering side. min-content forces the break. */
-.rapper-content .hero-name,
 .rapper .hero-inline .hero-name {
   width: min-content;
   line-height: .92;
@@ -443,15 +437,11 @@
    RESPONSIVE
    ──────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .caterer-content .hero-name,
   .caterer .hero-inline .hero-name { font-size: clamp(52px, 13vw, 90px); }
-  .rapper-content .hero-name,
   .rapper .hero-inline .hero-name { font-size: clamp(46px, 11vw, 84px); }
 }
 @media (max-width: 600px) {
-  .caterer-content .hero-name,
   .caterer .hero-inline .hero-name { font-size: clamp(44px, 14vw, 72px); }
-  .rapper-content .hero-name,
   .rapper .hero-inline .hero-name { font-size: clamp(40px, 12.5vw, 60px); }
   .split-label-name { gap: 8px; }
   .split-kicker { font-size: 9px; letter-spacing: .38em; gap: 8px; }
@@ -481,4 +471,34 @@
   .review-card:hover,
   .endorse-frame:hover .endorse-screen { transform: none; }
   .lux-cat-card:hover .lux-cat-media img { transform: scale(1.03); }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   9. SPLIT POLISH ON PHONES (Nov 12, 2026)
+   ──────────────────────────────────────────────────────────────── */
+/* The hero block keeps clear of the fixed "Switch to …" button. */
+@media (max-width: 900px) {
+  .hero-inline { bottom: max(8vh, 104px); }
+}
+/* The nav pill fits the screen: secondary links step aside so the
+   primary action is always reachable. */
+@media (max-width: 600px) {
+  .nav { top: 14px; }
+  .caterer-nav { left: 12px; }
+  .rapper-nav  { right: 12px; }
+  .nav-inner { gap: 2px; padding: 7px 7px 7px 10px; }
+  .nav-link { padding: 7px 9px; font-size: 12px; }
+  .caterer-nav .nav-link[href="#caterer-how"],
+  .caterer-nav .nav-link[href="#caterer-reviews"] { display: none; }
+}
+/* The two names never touch or leave the screen on the narrowest phones. */
+@media (max-width: 380px) {
+  .caterer-nav .nav-link[href="/gallery"] { display: none; }
+  .center-labels { padding-left: 4vw; padding-right: 4vw; }
+  .split-kicker { font-size: 8px; letter-spacing: .3em; }
+  .rapper-label .split-kicker { margin-right: -.3em; }
+  .caterer-label .split-word { font-size: 17px; letter-spacing: .06em; }
+  .rapper-label .split-word { font-size: 17px; }
+  .split-label-tag { font-size: 9px; letter-spacing: .26em; }
+  .rapper-label .split-label-tag { margin-right: -.26em; }
 }

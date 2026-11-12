@@ -17,13 +17,13 @@ import { THANKSGIVING, longDate, usd } from "@/data/thanksgiving";
  * Conversion order: hero → choose what you need → menu (select dishes) →
  * Book The Chef → how it works → story → reviews → FAQ → final CTA.
  */
-export default function CatererWorld({ navVisible, seasonal }: { navVisible: boolean; seasonal: Seasonal }) {
+export default function CatererWorld({ seasonal }: { seasonal: Seasonal }) {
   const tgFrom = Math.min(...THANKSGIVING.feasts.map((f) => f.price));
   const tgMin = Math.min(...THANKSGIVING.feasts.map((f) => f.minGuests));
   const tgMax = Math.max(...THANKSGIVING.feasts.map((f) => f.maxGuests));
   return (
     <section className="world caterer" id="catererWorld">
-      <nav className={`nav caterer-nav${navVisible ? " visible" : ""}`} id="catererNav" aria-label="Catering">
+      <nav className="nav caterer-nav" id="catererNav" aria-label="Catering">
         <div className="nav-inner">
           <img
             className="nav-logo-mark"
