@@ -82,9 +82,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Same font set as the original site — visual identity preserved */}
+        {/* Same font set as the original site — visual identity preserved.
+            Jost 350–400 (one variable file) is the Entertainer wordmark face. */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;700&family=Cinzel:wght@400;700;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;700&family=Cinzel:wght@400;700;900&family=Jost:wght@350..400&display=swap"
           rel="stylesheet"
         />
         <script
