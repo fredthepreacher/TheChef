@@ -148,14 +148,15 @@
    Desktop (>900px): only the dark area RIGHT of the music portrait.
    Portrait geometry (.rapper-img): left:-2%, height min(96vh,880px),
    max-width 60vw, ratio 641/960 = 0.6677. Panel starts where it ends
-   and feathers back into the production dark over its first 140px.
+   and feathers into the dark over its first 36px (the studio figure's
+   column sits right against it; see refine.css §8).
    Phones/tablets: fills the hero behind the portrait + text. */
 .entertainerHeroPanel {
   position: absolute; top: 0; bottom: 0; right: 0;
   width: calc(102% - min(min(96vh, 880px) * 0.6677, 60vw));
   z-index: 0; overflow: hidden; pointer-events: none;
-  -webkit-mask-image: linear-gradient(270deg, #000 0%, #000 calc(100% - 140px), transparent 100%);
-          mask-image: linear-gradient(270deg, #000 0%, #000 calc(100% - 140px), transparent 100%);
+  -webkit-mask-image: linear-gradient(270deg, #000 0%, #000 calc(100% - 36px), transparent 100%);
+          mask-image: linear-gradient(270deg, #000 0%, #000 calc(100% - 36px), transparent 100%);
 }
 .entertainerHeroVideo {
   position: absolute; inset: 0; width: 100%; height: 100%;
