@@ -88,16 +88,26 @@ const smooth = (t: number) => { const c = clamp(t, 0, 1); return c * c * (3 - 2 
 
 /** Everything the stage draws, derived from the divider position alone. */
 export function splitVisuals(split: number) {
-  const chef = smooth((split - 58) / 26);
-  const rapper = smooth((42 - split) / 26);
+  // The two names leave before a side's hero text arrives (they share the
+  // lower part of the screen), so the two are never readable at once.
+  const chef = smooth((split - 67) / 22);
+  const rapper = smooth((33 - split) / 22);
   return {
-    /** Catering hero text and nav. */
+    /** Catering hero text. */
     chef,
-    /** Entertainer hero text and nav. */
+    /** Entertainer hero text. */
     rapper,
-    /** The two name lockups shown at the even split. */
-    center: 1 - Math.max(chef, rapper),
+    /** The two name lockups shown at the even split: gone by 21% off centre. */
+    center: 1 - smooth((Math.abs(split - 50) - 3) / 18),
     /** The divider dissolves as it reaches either edge. */
     handle: smooth(Math.min(split, 100 - split) / 9),
   };
+}
+
+/**
+ * Which side the stage is committed to showing: switches the nav on and lets
+ * the media take its place for that side, just before the hero text fades in.
+ */
+export function splitFocus(split: number): "chef" | "rapper" | "" {
+  return split >= 66 ? "chef" : split <= 34 ? "rapper" : "";
 }

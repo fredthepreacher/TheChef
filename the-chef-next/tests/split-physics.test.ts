@@ -5,6 +5,7 @@ import {
   decideSnap,
   isSettled,
   releaseVelocity,
+  splitFocus,
   splitVisuals,
   stepSpring,
   type SpringConfig,
@@ -98,4 +99,22 @@ test("the visuals are continuous and symmetric", () => {
     const next = splitVisuals(Math.min(100, p + 1));
     assert.ok(Math.abs(next.chef - a.chef) < 0.09 && Math.abs(next.center - a.center) < 0.09, "no jumps");
   }
+});
+
+test("the two names and a side's hero text are never both readable", () => {
+  for (let p = 0; p <= 100; p += 0.5) {
+    const v = splitVisuals(p);
+    assert.ok(Math.min(v.center, Math.max(v.chef, v.rapper)) < 0.06, `overlap at ${p}`);
+  }
+  assert.equal(splitVisuals(71).center, 0);
+  assert.equal(splitVisuals(67).chef, 0);
+});
+
+test("focus commits to a side before its hero text appears, symmetrically", () => {
+  assert.equal(splitFocus(50), "");
+  assert.equal(splitFocus(65.9), "");
+  assert.equal(splitFocus(66), "chef");
+  assert.equal(splitFocus(34), "rapper");
+  assert.equal(splitFocus(34.1), "");
+  assert.ok(splitVisuals(66).chef === 0 && splitVisuals(34).rapper === 0);
 });

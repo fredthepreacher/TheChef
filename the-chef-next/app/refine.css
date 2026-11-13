@@ -617,3 +617,40 @@
     background: linear-gradient(0deg, rgba(8, 3, 5, .9) 0%, rgba(8, 3, 5, .78) 30%, rgba(8, 3, 5, .42) 47%, rgba(8, 3, 5, 0) 62%);
   }
 }
+
+/* ────────────────────────────────────────────────────────────────
+   11. MATCHED PORTRAITS + CHEAPER DRAG (Nov 13, 2026)
+   At equal frame height Chef stands about 1.28× smaller in the Catering
+   photo than in the Entertainer one (head 28% vs 36% of the frame). The
+   Catering photo is cropped in around his head so the two read at the
+   same scale; the frame itself keeps its size and position.
+   scale(z) about the top centre, then clip the local box back to 1/z:
+   the visible rectangle is exactly the original frame.
+   ──────────────────────────────────────────────────────────────── */
+/* Phones and tablets: z = 1.22 (1/z = 81.97%) */
+@media (max-width: 900px) {
+  .caterer .chef-img {
+    transform: scale(1.22);
+    transform-origin: 50% 0;
+    clip-path: inset(0 9.02% 18.03% 9.02%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 49.2%, transparent 80.3%);
+            mask-image: linear-gradient(180deg, #000 0%, #000 49.2%, transparent 80.3%);
+  }
+}
+@media (max-width: 600px) {
+  .caterer .chef-img {
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45.1%, transparent 80.3%);
+            mask-image: linear-gradient(180deg, #000 0%, #000 45.1%, transparent 80.3%);
+  }
+}
+/* Wide desktops (where the photo is not width-limited): z = 1.16, kept
+   lower because the photo is shown much larger there. 1/z = 86.21% */
+@media (min-width: 901px) and (min-aspect-ratio: 8/5) {
+  .caterer .chef-img {
+    transform: scale(1.16);
+    transform-origin: 50% 0;
+    clip-path: inset(0 6.9% 13.79% 6.9%);
+  }
+}
+/* The gold and ember sheens rest while the divider is being moved */
+.stage.is-dragging .split-word { animation-play-state: paused; }

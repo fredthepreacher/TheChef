@@ -10,6 +10,7 @@ import {
   decideSnap,
   isSettled,
   releaseVelocity,
+  splitFocus,
   splitVisuals,
   stepSpring,
   type SnapTarget,
@@ -38,10 +39,14 @@ const NUDGE_KEY = "chef:split-nudged";
  *
  * One engine owns the divider position. Dragging tracks the pointer 1:1,
  * releasing hands the position and velocity to a spring, and a side locks
- * only once the spring has arrived, so nothing jumps. Each frame writes
- * compositor-friendly properties (clip-path, transform, opacity) straight to
- * a handful of elements; no layout runs and React does not re-render while
- * the divider moves.
+ * only once the spring has arrived, so nothing jumps. Each frame writes only
+ * transforms and opacity to a handful of elements, so the browser can move
+ * already-painted layers instead of repainting: no layout, no paint, and no
+ * React re-render while the divider moves.
+ *
+ * The Entertainer world lies on top of the Catering world. It slides right by
+ * the divider position while its contents slide back by the same amount, so
+ * its own edge is the reveal line and nothing inside appears to move.
  */
 export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
   const stageRef = useRef<HTMLElement>(null);
@@ -70,6 +75,8 @@ export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
     if (!chefWorld || !rapWorld) return;
     const chefHero = chefWorld.querySelector<HTMLElement>(".hero-inline");
     const rapHero = rapWorld.querySelector<HTMLElement>(".hero-inline");
+    const rapWrap = rapWorld.querySelector<HTMLElement>(".rapper-hero-wrap");
+    const rapNav = rapWorld.querySelector<HTMLElement>(".rapper-nav");
 
     const root = document.documentElement;
     const body = document.body;
@@ -100,8 +107,11 @@ export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
       const s = split;
       if (s !== drawn.split) {
         drawn.split = s;
-        chefWorld.style.clipPath = `inset(0 ${(100 - s).toFixed(3)}% 0 0)`;
-        rapWorld.style.clipPath = `inset(0 0 0 ${s.toFixed(3)}%)`;
+        const pct = s.toFixed(3);
+        rapWorld.style.transform = `translate3d(${pct}%,0,0)`;
+        if (rapWrap) rapWrap.style.transform = `translate3d(-${pct}%,0,0)`;
+        // The nav is narrower than the stage, so its offset is in pixels.
+        if (rapNav) rapNav.style.transform = `translate3d(${(-(s * stageWidth) / 100).toFixed(2)}px,0,0)`;
         track.style.transform = `translate3d(${(s - 50).toFixed(3)}%,0,0)`;
       }
       const v = splitVisuals(s);
@@ -122,7 +132,7 @@ export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
         track.style.opacity = v.handle.toFixed(3);
       }
       // Discrete states change rarely; CSS reads them from the stage.
-      const focus = v.chef > 0.5 ? "chef" : v.rapper > 0.5 ? "rapper" : "";
+      const focus = splitFocus(s);
       if (focus !== drawn.focus) { drawn.focus = focus; stage.dataset.focus = focus; }
       const live = v.center > 0.4 ? "1" : "0";
       if (live !== drawn.live) { drawn.live = live; labels.dataset.live = live; }
@@ -187,8 +197,9 @@ export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
       velocity = 0;
       draw();
       // The locked layout is plain CSS; hand the worlds back to the stylesheet.
-      chefWorld.style.clipPath = "";
-      rapWorld.style.clipPath = "";
+      rapWorld.style.transform = "";
+      if (rapWrap) rapWrap.style.transform = "";
+      if (rapNav) rapNav.style.transform = "";
       if (chefHero) chefHero.style.opacity = "";
       if (rapHero) rapHero.style.opacity = "";
       drawn.split = drawn.chef = drawn.rapper = -1;
@@ -353,8 +364,11 @@ export default function SplitStage({ seasonal }: { seasonal: Seasonal }) {
     document.addEventListener("keydown", onDocKey);
 
     /* ── VIEWPORT ── */
-    // Everything is drawn in percentages, so a resize or rotation needs no redraw.
-    const onResize = () => { stageWidth = stage.clientWidth || window.innerWidth; };
+    // Almost everything is drawn in percentages; only the nav offset needs a redraw.
+    const onResize = () => {
+      stageWidth = stage.clientWidth || window.innerWidth;
+      if (phase !== "locked") { drawn.split = -1; requestDraw(); }
+    };
     window.addEventListener("resize", onResize);
     // A tab hidden mid-animation would otherwise resume with one huge time step.
     const onVisibility = () => { lastFrame = 0; };
