@@ -1,33 +1,51 @@
 "use client";
 
 import Link from "next/link";
+import { SHOW_UNVERIFIED_STATS } from "@/data/launch";
 import CatererMenu from "./CatererMenu";
 import ReviewsPreview from "./ReviewsPreview";
 import BookingCTA from "./BookingCTA";
+import CateringHeroVideo from "./CateringHeroVideo";
+import CurrentYear from "./CurrentYear";
+import RevealController from "./RevealController";
+import { ServiceLanes, HowItWorks, CateringFAQ, FinalCTA } from "./catering/CateringSections";
+import type { Seasonal } from "./SplitStage";
+import { THANKSGIVING, longDate, usd } from "@/data/thanksgiving";
 
-/** The caterer side of the split-screen — luxury catering brand world. */
-export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
+/**
+ * The caterer side of the split-screen — luxury catering brand world.
+ * Conversion order: hero → choose what you need → menu (select dishes) →
+ * Book The Chef → how it works → story → reviews → FAQ → final CTA.
+ */
+export default function CatererWorld({ seasonal }: { seasonal: Seasonal }) {
+  const tgFrom = Math.min(...THANKSGIVING.feasts.map((f) => f.price));
+  const tgMin = Math.min(...THANKSGIVING.feasts.map((f) => f.minGuests));
+  const tgMax = Math.max(...THANKSGIVING.feasts.map((f) => f.maxGuests));
   return (
     <section className="world caterer" id="catererWorld">
-      <nav className={`nav caterer-nav${navVisible ? " visible" : ""}`} id="catererNav">
+      <nav className="nav caterer-nav" id="catererNav" aria-label="Catering">
         <div className="nav-inner">
           <img
             className="nav-logo-mark"
-            src="/assets/the-logo-tight.jpg"
+            src="/assets/brand/the-chef-catering-logo.png"
             alt="The Chef Catering Services — Five Star Meals on Wheels"
+            width={40}
+            height={40}
           />
           <span className="nav-logo">The Chef</span>
-          <a className="nav-link" href="#caterer-about">About</a>
           <a className="nav-link" href="#caterer-menu">Menu</a>
+          <a className="nav-link" href="#caterer-how">How It Works</a>
           <a className="nav-link" href="#caterer-reviews">Reviews</a>
           <Link className="nav-link" href="/gallery">Our Work</Link>
-          <a className="nav-link btn-primary" href="#caterer-book" style={{ padding: "8px 16px", fontSize: 11 }}>
-            Book Now
+          <a className="nav-link btn-primary" href="/catering/inquiry" style={{ padding: "8px 16px", fontSize: 11 }}>
+            Build My Event
           </a>
         </div>
       </nav>
 
       <div className="caterer-hero-wrap">
+        {/* background media layer — behind the portrait + text */}
+        <CateringHeroVideo />
         <img
           className="portrait chef-img"
           src="/assets/chef-caterer.jpg"
@@ -41,20 +59,54 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
             Unforgettable food experiences for private events, celebrations, and every occasion worth savoring.
           </p>
           <div className="cta-row">
-            <a className="btn-primary" href="#caterer-menu">View Menu</a>
-            <a className="btn-ghost" href="#caterer-book">Book Catering</a>
+            <a className="btn-primary" href="/catering/inquiry">Build My Event</a>
+            <a className="btn-ghost" href="#caterer-menu">Explore Menu</a>
           </div>
+          {seasonal.thanksgiving && (
+            <Link className="hero-season" href="/thanksgiving">
+              <span className="hero-season-dot" aria-hidden="true" />
+              Now booking Thanksgiving feasts <span aria-hidden="true">→</span>
+            </Link>
+          )}
         </div>
       </div>
 
       <div className="page-sections">
+        {/* SEASONAL — Thanksgiving offer (owner-gated: data/thanksgiving.ts) */}
+        {seasonal.thanksgiving && (
+          <aside className="season-band" aria-label="Thanksgiving feasts">
+            <div className="season-band-text">
+              <p className="section-tag">Thanksgiving {THANKSGIVING.year}</p>
+              <p className="season-band-title">This Thanksgiving, you just sit down.</p>
+              <p className="season-band-sub">
+                Turkey, homemade sides and pie for {tgMin}–{tgMax} guests, from {usd(tgFrom)}. Order by{" "}
+                {longDate(THANKSGIVING.orderByISO)}.
+              </p>
+            </div>
+            <Link className="btn-primary season-band-cta" href="/thanksgiving">See the Feasts</Link>
+          </aside>
+        )}
+
+        {/* CHOOSE WHAT YOU NEED */}
+        <ServiceLanes />
+
+        {/* LUXURY MENU — selectable dishes → Your Event Menu → Build My Event */}
+        <CatererMenu />
+
+        {/* BOOK THE CHEF — moved up: right after guests have browsed the menu,
+            with the guest endorsement video as social proof (client feedback). */}
+        <BookingCTA />
+
+        {/* HOW IT WORKS */}
+        <HowItWorks />
+
         {/* ABOUT */}
         <section className="section" id="caterer-about">
           <p className="section-tag">The Story</p>
           <h2 className="section-title">
             More Than a Meal.<br />It&apos;s an Experience.
           </h2>
-          <div className="about-grid">
+          <div className="about-grid" data-reveal="">
             <div className="about-text">
               <p>
                 The Chef brings bold flavors, refined technique, and genuine passion to every plate. From intimate
@@ -69,27 +121,63 @@ export default function CatererWorld({ navVisible }: { navVisible: boolean }) {
                 packages.
               </p>
             </div>
-            <div className="about-stats">
-              <div className="stat-card"><div className="stat-num">200+</div><div className="stat-label">Events Catered</div></div>
-              <div className="stat-card"><div className="stat-num">5★</div><div className="stat-label">Avg. Client Rating</div></div>
-              <div className="stat-card"><div className="stat-num">8+</div><div className="stat-label">Years Experience</div></div>
-              <div className="stat-card"><div className="stat-num">12</div><div className="stat-label">Signature Dishes</div></div>
+            <div className="about-aside">
+              <figure className="about-seal">
+                <img
+                  src="/assets/brand/the-chef-catering-owner-logo.jpeg"
+                  alt="The Chef Catering Services crest — Five Star Meals on Wheels"
+                  width={720}
+                  height={854}
+                  loading="lazy"
+                />
+              </figure>
+              {/* Owner-unverified stats stay hidden (data/launch.ts → SHOW_UNVERIFIED_STATS). */}
+              {SHOW_UNVERIFIED_STATS && (
+                <div className="about-stats">
+                  <div className="stat-card"><div className="stat-num">200+</div><div className="stat-label">Events Catered</div></div>
+                  <div className="stat-card"><div className="stat-num">5★</div><div className="stat-label">Avg. Client Rating</div></div>
+                  <div className="stat-card"><div className="stat-num">8+</div><div className="stat-label">Years Experience</div></div>
+                  <div className="stat-card"><div className="stat-num">12</div><div className="stat-label">Signature Dishes</div></div>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* LUXURY MENU (accordion cards, menu docs, packages, CTA) */}
-        <CatererMenu />
-
-        {/* REVIEWS PREVIEW */}
+        {/* REVIEWS PREVIEW (+ optional video testimonial) */}
         <ReviewsPreview />
 
-        {/* BOOKING CTA */}
-        <BookingCTA />
+        {/* FAQ — owner-safe process facts only */}
+        <CateringFAQ />
+
+        {/* FINAL CTA */}
+        <FinalCTA />
+
+        {/* Scroll-reveal motion for [data-reveal] blocks (off for reduced motion) */}
+        <RevealController rootId="catererWorld" />
 
         <footer className="site-footer">
-          <span className="footer-logo">The Chef Catering</span>
-          <span>© 2025 The Chef Catering · All Rights Reserved</span>
+          <span className="footer-brand">
+            <img
+              className="footer-logo-mark"
+              src="/assets/brand/the-chef-catering-logo.png"
+              alt=""
+              aria-hidden="true"
+              width={44}
+              height={44}
+              loading="lazy"
+            />
+            <span className="footer-logo">The Chef Catering</span>
+          </span>
+          <span>
+            © <CurrentYear /> The Chef Catering · All Rights Reserved
+            {seasonal.privacy && (
+              <>
+                {" · "}
+                <Link href="/privacy">Privacy</Link>
+              </>
+            )}
+          </span>
         </footer>
       </div>
     </section>

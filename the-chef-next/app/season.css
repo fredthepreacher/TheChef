@@ -1,0 +1,145 @@
+/* ================================================================
+   NOV 9 PASS — additive only (imported after refine.css).
+   Entertainer: Shows "announced soon" state + film band.
+   Catering: Thanksgiving hero link + seasonal band.
+   Build My Event: package note + Thanksgiving order mode.
+   ================================================================ */
+
+/* ── Entertainer · Upcoming Shows, none confirmed yet ── */
+.shows-soon {
+  position: relative; margin-top: 44px; padding: 44px 40px 40px; max-width: 760px;
+  border: 1px solid rgba(255, 85, 32, .22); border-radius: 18px;
+  background:
+    radial-gradient(ellipse 70% 90% at 0% 0%, rgba(255, 85, 32, .10), transparent 60%),
+    rgba(10, 4, 4, .6);
+}
+.shows-soon-rule {
+  display: block; width: 56px; height: 2px; margin-bottom: 22px;
+  background: linear-gradient(90deg, var(--ember), transparent);
+}
+.shows-soon-title {
+  font-family: var(--font-artist); font-weight: 700; letter-spacing: -.01em; line-height: 1.12;
+  font-size: clamp(26px, 3.2vw, 38px); color: #fff; margin: 0 0 12px;
+}
+.shows-soon-sub { font-size: 15.5px; line-height: 1.65; color: rgba(255, 255, 255, .62); margin: 0 0 26px; max-width: 520px; }
+.shows-soon-cta { display: inline-flex; }
+.rapper .shows-soon-cta { border-color: rgba(255, 85, 32, .45); color: #fff; }
+.rapper .shows-soon-cta:hover { border-color: var(--ember); }
+
+/* ── Entertainer · film band (silent, lazy, letterboxed) ── */
+.ent-film { margin: 0; padding: 0 9vw 90px; }
+.ent-film-frame {
+  position: relative; aspect-ratio: 16 / 9; width: 100%; max-width: 1100px; margin: 0 auto;
+  border-radius: 14px; overflow: hidden; background: #050203 center / cover no-repeat;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 85, 32, .14);
+}
+.ent-film-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ent-film-grain {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(5, 2, 3, .35) 0%, transparent 22%, transparent 70%, rgba(5, 2, 3, .55) 100%);
+}
+.rapper .ent-film-toggle {
+  position: absolute; right: 16px; bottom: 16px; width: 44px; height: 44px; min-height: 44px; padding: 0;
+  display: grid; place-items: center; border-radius: 999px; cursor: pointer;
+  background: rgba(8, 4, 4, .62); color: #fff; border: 1px solid rgba(255, 255, 255, .22);
+  font-size: 13px; letter-spacing: -.08em; backdrop-filter: blur(4px);
+}
+.rapper .ent-film-toggle:hover { border-color: var(--ember); }
+.rapper .ent-film-toggle:focus-visible { outline: 2px solid var(--ember-glow); outline-offset: 3px; }
+.ent-film-caption {
+  max-width: 1100px; margin: 18px auto 0; display: flex; align-items: baseline; gap: 14px;
+}
+.ent-film-kicker { font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: var(--ember); }
+.ent-film-title { font-family: var(--font-artist); font-weight: 700; font-size: 20px; color: rgba(255, 255, 255, .86); }
+
+/* ── Catering · Thanksgiving link under the hero CTAs ── */
+.caterer .hero-inline .hero-season {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; margin-top: 18px;
+  font-size: 13px; letter-spacing: .06em; color: var(--gold-light); text-decoration: none;
+  padding: 8px 14px 8px 12px; border-radius: 999px;
+  border: 1px solid rgba(201, 168, 76, .35); background: rgba(10, 8, 4, .55);
+}
+.caterer .hero-inline .hero-season:hover { border-color: var(--gold); }
+.hero-season-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--gold); box-shadow: 0 0 0 4px rgba(201, 168, 76, .18); }
+
+/* ── Catering · seasonal band (top of the sections) ── */
+.season-band {
+  display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+  margin: 56px 9vw 0; padding: 34px 38px; border-radius: 16px;
+  border: 1px solid rgba(201, 168, 76, .32);
+  background: radial-gradient(ellipse 60% 120% at 100% 0%, rgba(201, 168, 76, .12), transparent 60%), #120e08;
+}
+.season-band .section-tag { margin-bottom: 8px; }
+.season-band-title {
+  font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.1; color: #fff; margin: 0 0 8px;
+}
+.season-band-sub { margin: 0; color: rgba(255, 255, 255, .66); font-size: 15px; line-height: 1.6; }
+.season-band-cta { flex: 0 0 auto; }
+/* base .btn-primary has no colour of its own — give the band CTA the catering gold */
+.caterer .season-band .btn-primary {
+  background: var(--gold); color: #0a0800; text-decoration: none;
+  box-shadow: 0 8px 30px rgba(201, 168, 76, .28);
+}
+
+/* ── Build My Event · chosen package ── */
+.event-pkg-note {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin: 18px 0 0;
+  padding: 14px 18px; border-radius: 12px; border: 1px solid rgba(201, 168, 76, .35);
+  background: rgba(201, 168, 76, .07); color: rgba(255, 255, 255, .78); font-size: 14px;
+}
+.event-pkg-note strong { color: #fff; font-weight: 600; }
+.event-pkg-kicker { font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); width: 100%; }
+.event-pkg-note a { margin-left: auto; font-size: 13px; }
+
+/* ── Build My Event · Thanksgiving order mode ── */
+.tg-feast-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 6px 0 4px; }
+.event-root label.tg-feast-opt {
+  position: relative; gap: 2px; margin: 0; padding: 14px 14px 12px; cursor: pointer;
+  border: 1px solid rgba(201, 168, 76, .2); border-radius: 12px; background: rgba(0, 0, 0, .2);
+}
+.event-root label.tg-feast-opt.is-on { border-color: var(--gold); background: rgba(201, 168, 76, .1); }
+.event-root label.tg-feast-opt:focus-within { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.event-root .tg-feast-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; pointer-events: none; }
+.tg-feast-serves { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+.tg-feast-name { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; color: #fff; line-height: 1.15; }
+.tg-feast-price { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--gold-light); line-height: 1.1; }
+.tg-pick { margin-top: 18px; }
+.event-root .tg-pick-head {
+  display: flex; justify-content: space-between; margin: 0 0 8px; color: #ded8cd; font-size: 14.5px;
+}
+.tg-pick-head span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.tg-chip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.event-root .tg-chip-grid .lux-item-pick.tg-chip {
+  margin: 0; width: 100%; min-height: 48px; padding: 8px 8px 8px 14px; font-weight: 400; color: #f5f0e6;
+  background: rgba(0, 0, 0, .2); border: 1px solid rgba(201, 168, 76, .18); border-radius: 10px;
+}
+.event-root .tg-chip-grid .lux-item-pick.tg-chip:hover { background: rgba(201, 168, 76, .06); }
+.event-root .tg-chip-grid .lux-item-pick.tg-chip.is-picked { background: rgba(201, 168, 76, .1); border-color: rgba(201, 168, 76, .5); }
+.event-root .tg-chip-grid .lux-item-pick.tg-chip:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Privacy notice ── */
+.privacy-doc h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 500; color: #fff; margin-top: 34px; }
+.privacy-doc ul { padding-left: 20px; display: grid; gap: 10px; color: rgba(255, 255, 255, .78); }
+.privacy-doc p { color: rgba(255, 255, 255, .78); }
+
+@media (max-width: 860px) {
+  .tg-feast-grid { grid-template-columns: 1fr 1fr; }
+  .tg-chip-grid { grid-template-columns: 1fr 1fr; }
+  .season-band { margin: 0 6vw; padding: 26px 22px; }
+  .season-band-cta { width: 100%; justify-content: center; }
+  .ent-film { padding: 0 6vw 70px; }
+  .shows-soon { padding: 32px 24px 28px; }
+}
+@media (max-width: 360px) {
+  .tg-chip-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-season, .season-band-cta { transition: none; }
+}
+
+/* ── Gallery · section captions wrap on phones (pre-existing overflow at ≤ 600px) ── */
+@media (max-width: 600px) {
+  .section-header { flex-wrap: wrap; row-gap: 6px; }
+  .section-count { white-space: normal; margin-left: 0; width: 100%; }
+}

@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { homeReviews } from "@/data/reviews";
+import { homeReviews, reviews } from "@/data/reviews";
+import { REVIEW_VIDEO } from "@/data/media";
+import EndorsementVideo from "./catering/EndorsementVideo";
 
 /** Homepage catering reviews preview — three cards + link to the full reviews page. */
 export default function ReviewsPreview() {
@@ -11,9 +13,16 @@ export default function ReviewsPreview() {
         Real reviews from real clients — from weddings and corporate events to private dinners and baby showers.
       </p>
 
+      {/* Video testimonial — its own card, never mixed into the written quotes */}
+      {REVIEW_VIDEO && (
+        <div className="review-video-row" data-reveal="">
+          <EndorsementVideo clip={REVIEW_VIDEO} />
+        </div>
+      )}
+
       <div className="reviews-grid">
-        {homeReviews.map((r) => (
-          <div className="review-card" key={r.name}>
+        {homeReviews.map((r, i) => (
+          <div className="review-card" key={r.name} data-reveal="" style={{ "--reveal-delay": `${i * 100}ms` } as React.CSSProperties}>
             <div className="review-stars">★★★★★</div>
             <p className="review-text">
               {r.quote.map((seg, i) =>
@@ -42,7 +51,7 @@ export default function ReviewsPreview() {
           Read All Reviews
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
         </Link>
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,.28)", letterSpacing: ".06em" }}>9 verified client reviews</p>
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,.28)", letterSpacing: ".06em" }}>{reviews.length} client reviews</p>
       </div>
     </section>
   );

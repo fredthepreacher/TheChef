@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ReviewsSection from "@/components/ReviewsSection";
 import BodyClass from "@/components/BodyClass";
-import { CATERING_EMAIL, CATERING_PHONE, BRAND, mailto, tel } from "@/data/contact";
+import CurrentYear from "@/components/CurrentYear";
+import { CATERING_PHONE, BRAND, tel } from "@/data/contact";
+import { SHOW_UNVERIFIED_STATS } from "@/data/launch";
 
 export const metadata: Metadata = {
   title: "Client Reviews",
   description:
-    "9 verified five-star reviews for The Chef Catering Services — weddings, baby showers, corporate events, and private dinners. Real clients, real experiences.",
+    "Five-star client reviews for The Chef Catering Services — weddings, baby showers, corporate events, and private dinners. Real clients, real experiences.",
   alternates: { canonical: "/reviews" },
   openGraph: {
     title: "Client Reviews | The Chef Catering Services",
@@ -57,12 +59,15 @@ export default function ReviewsPage() {
             <div className="rv-trust-text">5 Star Rating</div>
           </div>
         </div>
-        <div className="rv-trust-item">
-          <div>
-            <div className="rv-trust-num">200+</div>
-            <div className="rv-trust-text">Events Catered</div>
+        {/* "200+ Events Catered" is owner-unverified — hidden until confirmed (data/launch.ts). */}
+        {SHOW_UNVERIFIED_STATS && (
+          <div className="rv-trust-item">
+            <div>
+              <div className="rv-trust-num">200+</div>
+              <div className="rv-trust-text">Events Catered</div>
+            </div>
           </div>
-        </div>
+        )}
         <div className="rv-trust-item">
           <div className="rv-trust-text" style={{ textAlign: "center", lineHeight: 1.8 }}>
             Private Events &nbsp;·&nbsp; Corporate Catering<br />
@@ -114,7 +119,7 @@ export default function ReviewsPage() {
         <div className="rv-cta-btns">
           <a
             className="btn-primary"
-            href={mailto(CATERING_EMAIL, "Quote Request")}
+            href="/catering/inquiry"
             style={{ background: "var(--gold)", color: "#0a0800", boxShadow: "0 8px 30px rgba(201,168,76,.30)" }}
           >
             Request a Quote
@@ -125,7 +130,7 @@ export default function ReviewsPage() {
 
       <footer className="rv-footer">
         <span className="rv-footer-brand">{BRAND.cateringFull}</span>
-        <span className="rv-footer-copy">© 2025 The Chef Catering Services · Five Star Meals on Wheels · All Rights Reserved</span>
+        <span className="rv-footer-copy">© <CurrentYear /> The Chef Catering Services · Five Star Meals on Wheels · All Rights Reserved</span>
       </footer>
     </>
   );

@@ -4,14 +4,24 @@ export type MenuCategory = {
   id: string;
   title: string;
   description: string;
+  /** Real photo of Chef Frankie's food for the category card (public/assets/menu). */
+  image: { src: string; alt: string };
   /** Two columns of items, matching the original drawer layout. Empty for the custom card. */
   columns: [MenuItem[], MenuItem[]] | null;
 };
 
+/**
+ * Catering menu. Source of truth: Chef Frankie's printed "The Chef's Catering
+ * Menu" (public/assets/menu_full_doc.jpg) plus items already approved on the
+ * previous site (oxtail, seafood boil, banana pudding, trifle cups, custom
+ * cakes/platters). Items are selectable in "Build My Event"; selections are a
+ * request — Chef confirms every item in the custom quote.
+ */
 export const menuCategories: MenuCategory[] = [
   {
     id: "appetizers",
     title: "Appetizers",
+    image: { src: "/assets/menu/appetizers.webp", alt: "Baked potato rounds with fresh herbs on a serving tray" },
     description:
       "Handcrafted starters that set the tone — charcuterie boards, shrimp cocktail, caprese bites, wings, egg rolls, and more.",
     columns: [
@@ -21,6 +31,8 @@ export const menuCategories: MenuCategory[] = [
         { name: "Caprese Bites", note: "bocconcini, heirloom tomato, balsamic glaze" },
         { name: "Egg Rolls", note: "sweet chili dipping sauce" },
         { name: "Ham & Cheese Sliders", note: "honey mustard, brioche" },
+        { name: "Cheeseburger Sliders", note: "aged cheddar, pickles, secret sauce" },
+        { name: "Chips & Salsa", note: "house-roasted salsa, guacamole" },
       ],
       [
         { name: "Wings", note: "buffalo, bbq, or lemon pepper" },
@@ -28,12 +40,15 @@ export const menuCategories: MenuCategory[] = [
         { name: "Deviled Eggs", note: "classic recipe, paprika, chives" },
         { name: "Pineapple Teriyaki Meatballs", note: "scallions, sesame" },
         { name: "Customized Kabobs", note: "seasonal selections" },
+        { name: "Baked Potato Rounds", note: "crème fraîche, chives, bacon" },
+        { name: "Cheese Quesadilla", note: "sour cream, pico de gallo" },
       ],
     ],
   },
   {
     id: "mains",
     title: "Main Course",
+    image: { src: "/assets/menu/mains.webp", alt: "Plated lamb chops with lobster tail, asparagus and mashed potatoes" },
     description:
       "Premium entrées from roasted chicken and jerk to baby back ribs, oxtail, beef brisket, lamb chops, and steak.",
     columns: [
@@ -57,6 +72,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "seafood",
     title: "Seafood",
+    image: { src: "/assets/menu/seafood.webp", alt: "Seafood boil with crab legs, shrimp and herbs" },
     description:
       "Lobster tail, salmon, shrimp linguini, seafood boils — every piece sourced fresh and prepared to perfection.",
     columns: [
@@ -75,6 +91,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "sides",
     title: "Sides & Bread",
+    image: { src: "/assets/menu/sides.webp", alt: "Caramelized plantains on a serving tray" },
     description:
       "Baked mac & cheese, collard greens, candied yams, rice and peas, pasta salad, cornbread — soul food elevated.",
     columns: [
@@ -83,34 +100,39 @@ export const menuCategories: MenuCategory[] = [
         { name: "Collard Greens", note: "smoked turkey, garlic" },
         { name: "Sweet Potatoes", note: "brown sugar, cinnamon" },
         { name: "Rice & Peas", note: "coconut, scallions, thyme" },
+        { name: "White Rice", note: "fluffy, buttery" },
         { name: "Mashed Potatoes", note: "creamy, roasted garlic" },
+        { name: "Potato Salad", note: "creamy, fresh herbs" },
         { name: "Pasta Salad", note: "italian dressing, vegetables" },
       ],
       [
         { name: "Corn on the Cob", note: "butter, sea salt" },
         { name: "Mixed Vegetables", note: "seasonal medley" },
         { name: "Caesar Salad", note: "romaine, parmesan, croutons" },
+        { name: "Garden Salad", note: "mixed greens, cucumber, tomato, vinaigrette" },
         { name: "Baked Beans", note: "brown sugar, bacon" },
-        { name: "Garlic Bread / Cornbread", note: "biscuits, garlic knots" },
         { name: "Coleslaw", note: "classic, creamy" },
+        { name: "Garlic Bread / Garlic Knots", note: "fresh-baked" },
+        { name: "Cornbread / Biscuits", note: "fresh-baked" },
       ],
     ],
   },
   {
     id: "desserts",
     title: "Desserts",
+    image: { src: "/assets/menu/desserts.webp", alt: "Dessert board with pastries, muffins and chocolate-dipped strawberries" },
     description:
       "Cakes, pies, banana pudding, brownies, fruit platters, and chocolate-dipped strawberries for a sweet finish.",
     columns: [
       [
-        { name: "Cakes", note: "chocolate, vanilla, red velvet, cheesecake, lemon" },
+        { name: "Cakes", note: "chocolate, vanilla, red velvet, carrot, cheesecake, lemon" },
         { name: "Pies", note: "apple, pecan, key lime, cherry, chocolate silk" },
         { name: "Banana Pudding", note: "classic southern recipe" },
         { name: "Brownies", note: "fudge, walnut, peanut butter, white chocolate" },
       ],
       [
         { name: "Cookies", note: "chocolate chip, oatmeal, peanut butter, sugar" },
-        { name: "Fruit Platters", note: "mixed, tropical, berry, seasonal" },
+        { name: "Fruit Platters", note: "mixed, tropical, berry, citrus, melon, seasonal" },
         { name: "Dessert Trifle Cups", note: "individual servings, seasonal flavors" },
         { name: "Custom Event Cake", note: "upon request, any occasion" },
       ],
@@ -119,6 +141,7 @@ export const menuCategories: MenuCategory[] = [
   {
     id: "custom",
     title: "Custom Menus",
+    image: { src: "/assets/menu/custom.webp", alt: "Full catering spread in chafing dishes set up in a client's kitchen" },
     description:
       "Don't see what you need? Chef builds fully custom menus for weddings, corporate events, holidays, and meal prep.",
     columns: null,
@@ -148,7 +171,8 @@ export const menuDocs: MenuDoc[] = [
     src: "/assets/menu_family_doc.png",
     alt: "Family Menu — The Chef Caters To You LLC",
     title: "Family Package Menu",
-    subtitle: "Guest Specials · Family 8–12 · Starting at $800",
+    // The printed menu lists no price ("Pricing subject to change").
+    subtitle: "Guest Specials · Family 8–12 · Custom quote",
   },
   {
     id: "menu-full",
@@ -169,6 +193,11 @@ export type Package = {
   tone: "silver" | "gold" | "platinum";
 };
 
+/**
+ * Package cards from the previous site, shown while
+ * data/launch.ts → SHOW_PACKAGE_PRICING is true (see the provenance note
+ * there). The CRM snapshots the chosen card onto the lead at intake.
+ */
 export const packages: Package[] = [
   {
     badge: "Silver",
