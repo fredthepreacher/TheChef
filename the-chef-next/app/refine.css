@@ -468,8 +468,8 @@
 @media (prefers-reduced-motion: reduce) {
   .entertainerHeroVideo { transition: none; }
 }
-/* Phones and tablets: the portrait is the subject (section 10); the studio
-   loop becomes a dark, moving backdrop that fades out above the text. */
+/* Phones and tablets, both orientations: the backdrop veil (the loop itself
+   is framed per orientation below). */
 @media (max-width: 900px) {
   .entertainerHeroVideo { object-position: 50% 30%; }
   .entertainerHeroVeil {
@@ -478,6 +478,48 @@
       linear-gradient(180deg, rgba(8, 3, 5, .76) 0%, rgba(8, 3, 5, .70) 35%, rgba(8, 3, 5, .86) 60%, rgba(8, 3, 5, .94) 100%);
   }
 }
+/* Phones and tablets (visibility pass, Nov 18): the portrait is the subject
+   (section 10) and covers the centre of the hero, which is exactly where the
+   studio figure sits in the clip. Full-bleed, the motion played behind the
+   photo and only static wall showed through the veil. The clip is now a
+   feathered 9:16 column in the free strip right of the portrait, on the
+   portrait's top line; that strip is on screen both in the split view and
+   with the Entertainer side open. The column sits above the veil and carries
+   its own exposure, fades out above the eyebrow (the panel mask in section 10
+   still applies on top), and the poster fills the same box whenever autoplay
+   is blocked (Low Power Mode) or motion is reduced. Portrait orientation
+   only: in phone landscape the hero text already spans that strip, so
+   landscape keeps the full-bleed backdrop from the rule above. */
+@media (max-width: 900px) and (orientation: portrait) {
+  .entertainerHeroVideo {
+    /* free strip: half the screen less the portrait width shown right of the divider */
+    --ent-strip: calc(50vw - var(--hero-photo-s));
+    /* the seated figure is ~0.366 × clip height wide: keep it inside the strip with air */
+    --ent-ch: min(var(--hero-photo-h), var(--ent-strip) / .4);
+    inset: auto;
+    top: var(--hero-photo-top);
+    left: calc(50vw + var(--hero-photo-s) + var(--ent-strip) / 2 - var(--ent-ch) * .28125);
+    width: auto;
+    height: var(--ent-ch);
+    aspect-ratio: 9 / 16;
+    object-position: 50% 50%;
+    z-index: 1; /* above .entertainerHeroVeil */
+    filter: saturate(.9) contrast(1.06) brightness(.66);
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%),
+      linear-gradient(180deg, transparent 0%, #000 8%, #000 58%, transparent 86%);
+    -webkit-mask-composite: source-in;
+            mask-image:
+      linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%),
+      linear-gradient(180deg, transparent 0%, #000 8%, #000 58%, transparent 86%);
+            mask-composite: intersect;
+  }
+}
+/* When iOS refuses to autoplay (Low Power Mode) it can draw its own
+   start-playback glyph over the element; the loop is decoration, so the
+   poster stays clean instead. */
+.entertainerHeroVideo::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+.entertainerHeroVideo::-webkit-media-controls { display: none !important; }
 
 /* ────────────────────────────────────────────────────────────────
    RESPONSIVE
